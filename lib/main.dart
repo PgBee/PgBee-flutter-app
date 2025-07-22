@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:pgbee/login_screen.dart';
+import 'package:pgbee/core/theme/app_theme.dart';
+import 'package:pgbee/views/screens/login_screen.dart';
 
 void main() {
   runApp(PgBee());
@@ -14,10 +15,7 @@ class PgBee extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'PgBee',
-      theme: ThemeData(
-        
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFAFAFAFA)),
-      ),
+      theme: AppTheme.appTheme,
       home: LoginScreen(),
     );
   }
