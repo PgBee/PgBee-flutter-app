@@ -10,4 +10,11 @@ class AuthModel {
     required this.email,
     required this.password,
   });
+
+  Map<String, dynamic> toJson() => {
+    'firstName': firstName,
+    'lastName': lastName,
+    'email': email,
+    'password': password,
+  };
 }
