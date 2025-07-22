@@ -8,7 +8,18 @@ class AppTheme {
     scaffoldBackgroundColor: LightColor.background,
     canvasColor: LightColor.background,
     cardColor: LightColor.background,
-    hintColor: LightColor.hintText,
-    shadowColor: LightColor.black
+    hintColor: LightColor.grey,
+    shadowColor: LightColor.shadowColor
   );
+
+  static List<BoxShadow> shadowBox =  [
+    BoxShadow(
+      color: LightColor.shadowColor,
+      blurRadius: 17,
+      offset: Offset(0, 8),
+      spreadRadius: 0,
+    ),
+  ];
+
+  static EdgeInsets screenPadding = EdgeInsets.symmetric(vertical: 16);
 }

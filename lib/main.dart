@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
+//import 'package:pgbee/core/routing/route.dart';
 import 'package:pgbee/core/theme/app_theme.dart';
-import 'package:pgbee/views/screens/login_screen.dart';
+import 'package:pgbee/providers/auth_provider.dart';
+import 'package:pgbee/views/screens/auth_screen.dart';
+import 'package:provider/provider.dart';
 
 void main() {
-  runApp(PgBee());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider())
+      ],
+      child: PgBee(),
+    )
+  );
 }
 
 class PgBee extends StatelessWidget {
@@ -13,10 +23,11 @@ class PgBee extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      //routes: AppRoute.appRoute,
       debugShowCheckedModeBanner: false,
       title: 'PgBee',
       theme: AppTheme.appTheme,
-      home: LoginScreen(),
+      home: AuthScreen(),
     );
   }
 }
