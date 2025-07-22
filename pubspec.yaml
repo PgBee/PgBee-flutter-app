@@ -25,6 +25,7 @@ flutter:
   assets:
     - assets/images/PgBee.svg
     - assets/images/logo.png
+    - assets/images/recaptcha.png
 
   # To add fonts of Application
   fonts:

@@ -11,4 +11,21 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Password Visible or Not
+  bool _obscurePassword = true;
+  bool get obscurePassword => _obscurePassword;
+
+  void changeVisibility(){
+    _obscurePassword = !_obscurePassword;
+    notifyListeners();
+  }
+
+  // Terms and Condition Terms
+  bool _agreeToTerms = false;
+  bool get agreeToTerms => _agreeToTerms;
+
+  void changeAgreeTerms(){
+    _agreeToTerms = !_agreeToTerms;
+    notifyListeners();
+  } 
 }
