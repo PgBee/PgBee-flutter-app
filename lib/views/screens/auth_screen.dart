@@ -1,202 +1,84 @@
 import 'package:flutter/material.dart';
+import 'package:pgbee/core/constants/colors.dart';
+import 'package:pgbee/core/theme/app_theme.dart';
+import 'package:pgbee/providers/auth_provider.dart';
+import 'package:pgbee/views/widgets/auth_widgets.dart';
+import 'package:provider/provider.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class AuthScreen extends StatefulWidget {
+  const AuthScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  bool isSignUp = false;
+class _AuthScreenState extends State<AuthScreen> {
+  // Controllers
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _fNameController = TextEditingController();
+  final TextEditingController _lNameController = TextEditingController();
+
+  // form Key
+  final GlobalKey _signUpFormKey = GlobalKey<FormState>();
+  final GlobalKey _signInFormKey = GlobalKey<FormState>();
+
+  
   bool _obscurePassword = true;
   bool _agreeToTerms = false;
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: AppTheme.screenPadding,
             child: Column(
               children: [
                 const SizedBox(height: 40),
+                
                 // Logo
                 Image.asset(
-                  'assets/logo.png',
+                  'assets/images/logo.png',
                   width: 300,
                   height: 50,
                 ),
                 const SizedBox(height: 60),
+
                 // Main container
                 Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
+                  width: double.maxFinite,
+                  padding: EdgeInsets.all(24),
                   decoration: ShapeDecoration(
-                    color: const Color(0xFFFAFAFA),
                     shape: RoundedRectangleBorder(
-                      side: const BorderSide(
+                      side:  BorderSide(
                         width: 1,
-                        color: Color(0x4C424242),
+                        color: LightColor.grey,
                       ),
                       borderRadius: BorderRadius.circular(25),
                     ),
-                    shadows: const [
-                      BoxShadow(
-                        color: Color(0x0C2A2A2A),
-                        blurRadius: 17,
-                        offset: Offset(0, 8),
-                        spreadRadius: 0,
-                      ),
-                    ],
+                    shadows: AppTheme.shadowBox
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Sign Up / Log In toggle buttons
-                      Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => setState(() => isSignUp = true),
-                              child: Container(
-                                height: 56,
-                                decoration: ShapeDecoration(
-                                  color: isSignUp ? const Color(0xFF1F1F1F) : const Color(0xFFFAFAFA),
-                                  shape: RoundedRectangleBorder(
-                                    side: BorderSide(
-                                      width: 1,
-                                      color: isSignUp ? Colors.transparent : const Color(0x4C424242),
-                                    ),
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(10),
-                                      bottomLeft: Radius.circular(10),
-                                    ),
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    'Sign up',
-                                    style: TextStyle(
-                                      color: isSignUp ? const Color(0xFFFAFAFA) : const Color(0xFF1F1F1F),
-                                      fontSize: 18,
-                                      fontFamily: 'Poppins',
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => setState(() => isSignUp = false),
-                              child: Container(
-                                height: 56,
-                                decoration: ShapeDecoration(
-                                  color: !isSignUp ? const Color(0xFF1F1F1F) : const Color(0xFFFAFAFA),
-                                  shape: RoundedRectangleBorder(
-                                    side: BorderSide(
-                                      width: 1,
-                                      color: !isSignUp ? Colors.transparent : const Color(0x4C424242),
-                                    ),
-                                    borderRadius: const BorderRadius.only(
-                                      topRight: Radius.circular(10),
-                                      bottomRight: Radius.circular(10),
-                                    ),
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    'Log in',
-                                    style: TextStyle(
-                                      color: !isSignUp ? const Color(0xFFFAFAFA) : const Color(0xFF1F1F1F),
-                                      fontSize: 18,
-                                      fontFamily: 'Poppins',
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                      AuthWidgets.authChoice(),
+
                       const SizedBox(height: 24),
+                      
                       // Google Sign In/Up button
-                      Container(
-                        width: double.infinity,
-                        height: 56,
-                        decoration: ShapeDecoration(
-                          color: const Color(0xFFFAFAFA),
-                          shape: RoundedRectangleBorder(
-                            side: const BorderSide(
-                              width: 1,
-                              color: Color(0xFF424242),
-                            ),
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                        ),
-                        child: TextButton.icon(
-                          onPressed: () {},
-                          icon: Image.network(
-                            'https://www.google.com/favicon.ico',
-                            width: 20,
-                            height: 20,
-                          ),
-                          label: Text(
-                            isSignUp ? 'Sign up with Google' : 'Log In with Google',
-                            style: const TextStyle(
-                              color: Color(0xFF1F1F1F),
-                              fontSize: 16,
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                          style: TextButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                        ),
-                      ),
+                      AuthWidgets.googleAuth(authProvider: authProvider),
                       const SizedBox(height: 24),
+
                       // OR divider
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              height: 1,
-                              color: const Color(0x4C424242),
-                            ),
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              'OR',
-                              style: TextStyle(
-                                color: Color(0xFF424242),
-                                fontSize: 14,
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Container(
-                              height: 1,
-                              color: const Color(0x4C424242),
-                            ),
-                          ),
-                        ],
-                      ),
+                      AuthWidgets.divider(),
                       const SizedBox(height: 24),
+
                       // Form fields
-                      if (isSignUp) ...[
+                      if (authProvider.isSignUp) ...[
                         // First Name
                         const Text(
                           'First name',
@@ -364,7 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                       ),
-                      if (!isSignUp) ...[
+                      if (!authProvider.isSignUp) ...[
                         const SizedBox(height: 8),
                         Align(
                           alignment: Alignment.centerRight,
@@ -463,7 +345,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ],
-                      if (isSignUp) ...[
+                      if (authProvider.isSignUp) ...[
                         const SizedBox(height: 24),
                         // Terms and conditions for sign up
                         Row(
@@ -540,7 +422,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: Center(
                           child: Text(
-                            isSignUp ? 'Sign Up' : 'Log In',
+                            authProvider.isSignUp ? 'Sign Up' : 'Log In',
                             style: const TextStyle(
                               color: Color(0xFFFAFAFA),
                               fontSize: 18,
