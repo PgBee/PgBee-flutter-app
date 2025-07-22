@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pgbee/core/constants/colors.dart';
+import 'package:pgbee/core/theme/app_theme.dart';
 import 'package:pgbee/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -64,7 +65,7 @@ class AuthWidgets {
                     child: Text(
                       'Log in',
                       style: TextStyle(
-                        color: !provider.isSignUp ? LightColor.black : LightColor.background,
+                        color: !provider.isSignUp ? LightColor.background : LightColor.black,
                         fontSize: 18,
                         fontWeight: FontWeight.w400,
                       ),
@@ -153,4 +154,259 @@ class AuthWidgets {
       ],
     );
   }
+
+  // Text Form Field and Name Widget
+  static Column formField({
+    required String title,
+    required TextEditingController controller,
+    required String hintText,
+    required TextInputType type
+  }){
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: AppTheme.h6Style
+        ),
+        SizedBox(height: 8),
+        Container(
+          height: 61,
+          width: double.maxFinite,
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          decoration: ShapeDecoration(
+            shape: RoundedRectangleBorder(
+              side: BorderSide(
+                width: 1,
+                color: LightColor.grey,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          child: TextFormField(
+            keyboardType: type,
+            controller: controller,
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: AppTheme.h6Style,
+              border: InputBorder.none,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Password Form
+  static Column passwordField({
+    required AuthProvider authProvider,
+    required TextEditingController controller
+  }){
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Password',
+          style: AppTheme.h6Style
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 61,
+          width: double.maxFinite,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          decoration: ShapeDecoration(
+            shape: RoundedRectangleBorder(
+              side: BorderSide(
+                width: 1,
+                color: LightColor.grey,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  keyboardType: TextInputType.number,
+                  controller: controller,
+                  obscureText: authProvider.obscurePassword,
+                  decoration: InputDecoration(
+                    hintText: 'Enter your password',
+                    hintStyle: AppTheme.h6Style,
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+              GestureDetector(
+                onTap: authProvider.changeVisibility,
+                child: Icon(
+                  authProvider.obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  color: LightColor.appPrimary,
+                  size: 20,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Terms and Condition Widget
+  static Column termsAndCondition({
+    required AuthProvider authProvider
+  }){
+    return Column(
+      children: [ 
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: authProvider.changeAgreeTerms,
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: LightColor.grey,
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.circular(3),
+                  color: authProvider.agreeToTerms ? LightColor.black : Colors.transparent,
+                ),
+                child: authProvider.agreeToTerms
+                ? Icon(
+                    Icons.check,
+                    size: 14,
+                    color: LightColor.background,
+                  )
+                : null,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  text: 'By creating an account, I agree to our ',
+                  style: TextStyle(
+                    color: LightColor.grey,
+                    fontSize: 12,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w400,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: 'Terms of use',
+                      style: TextStyle(
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                    TextSpan(text: ' and '),
+                    TextSpan(
+                      text: 'Privacy Policy',
+                      style: TextStyle(
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Forget Password Widget
+  static Align forgetPassword(){
+    return Align(
+      alignment: Alignment.centerRight,
+      child: GestureDetector(
+        onTap: () {
+          // Handle forgot password
+        },
+        child: Text(
+          'Forgot Your Password?',
+          style: TextStyle(
+            color: LightColor.grey,
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Captcha Widget 
+  static Column captacha(){
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Verify Captcha',
+          style: AppTheme.h6Style
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.maxFinite,
+          height: 61,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: ShapeDecoration(
+            shape: RoundedRectangleBorder(
+              side: BorderSide(
+                width: 1,
+                color: LightColor.grey,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 20,
+                    height: 20,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: LightColor.grey,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Icon(
+                      Icons.check,
+                      size: 14,
+                      color: LightColor.black,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'I\'m not a robot',
+                    style: AppTheme.h6Style
+                  ),
+                ],
+              ),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: LightColor.background,
+                  borderRadius: BorderRadius.all(Radius.circular(4)),
+                ),
+                child: Center(
+                  child: Image.asset('assets/images/recaptcha.png')
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+
 }

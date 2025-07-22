@@ -21,5 +21,14 @@ class AppTheme {
     ),
   ];
 
+  // Text Styles
+  static TextStyle h1Style = TextStyle(fontSize: 32,fontWeight: FontWeight.normal);
+  static TextStyle h2Style = TextStyle(fontSize: 28,fontWeight: FontWeight.normal);
+  static TextStyle h3Style = TextStyle(fontSize: 24,fontWeight: FontWeight.w400);
+  static TextStyle h4Style = TextStyle(fontSize: 20,fontWeight: FontWeight.w400);
+  static TextStyle h5Style = TextStyle(fontSize: 18,fontWeight: FontWeight.w400);
+  static TextStyle h6Style = TextStyle(fontSize: 16,fontWeight: FontWeight.w400);
+
+
   static EdgeInsets screenPadding = EdgeInsets.symmetric(vertical: 16);
 }
