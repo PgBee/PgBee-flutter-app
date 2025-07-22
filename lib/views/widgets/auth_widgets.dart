@@ -197,6 +197,7 @@ class AuthWidgets {
     );
   }
 
+  // Password Form
   static Column passwordField({
     required AuthProvider authProvider,
     required TextEditingController controller
@@ -226,6 +227,7 @@ class AuthWidgets {
             children: [
               Expanded(
                 child: TextFormField(
+                  keyboardType: TextInputType.number,
                   controller: controller,
                   obscureText: authProvider.obscurePassword,
                   decoration: InputDecoration(

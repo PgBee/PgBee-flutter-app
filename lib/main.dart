@@ -4,8 +4,10 @@ import 'package:pgbee/core/theme/app_theme.dart';
 import 'package:pgbee/providers/auth_provider.dart';
 import 'package:pgbee/views/screens/auth_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:pgbee/config/locator.dart';
 
 void main() {
+  setupLocator();
   runApp(
     MultiProvider(
       providers: [
