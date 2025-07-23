@@ -14,6 +14,42 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+
+  // Validator
+  // first Name
+  String? firstNameValidator(String? value){
+    if(value == null || value.isEmpty){
+      return 'Enter First name';
+    }
+    return null;
+  }
+
+  // last name
+  String? lastNameValidator(String? value){
+    if(value == null || value.isEmpty){
+      return 'Enter Last name';
+    }
+    return null;
+  }
+
+  // Email 
+  String? validateEmail(String? value) {
+    if (value == null || value.isEmpty) return 'Enter email';
+    final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    if (!regex.hasMatch(value)) return 'Invalid email format';
+    return null;
+}
+
+  // Password
+  String? passwordValidator(String? value){
+    if (value == null || value.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    return null;
+  }
+
+
+
   // Controllers
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -87,6 +123,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           children: [
                             // First Name
                             AuthWidgets.formField(
+                              validator: firstNameValidator,
                               type: TextInputType.name,
                               title: 'First name', 
                               controller: _fNameController, 
@@ -96,6 +133,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                             // Last Name
                             AuthWidgets.formField(
+                              validator: lastNameValidator,
                               type: TextInputType.name,
                               title: 'Last name', 
                               controller: _lNameController, 
@@ -105,6 +143,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                             // Email
                             AuthWidgets.formField(
+                              validator: validateEmail,
                               title: 'Email', 
                               controller: _emailController, 
                               hintText: 'Enter your email address', 
@@ -114,6 +153,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                             // Password
                             AuthWidgets.passwordField(
+                              validator: passwordValidator,
                               authProvider: authProvider,
                               controller: _passwordController
                             ),
@@ -142,6 +182,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                             // Email
                             AuthWidgets.formField(
+                              validator: validateEmail,
                               title: 'Email', 
                               controller: _emailController, 
                               hintText: 'Enter your email address', 
@@ -151,6 +192,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                             // Password
                             AuthWidgets.passwordField(
+                              validator: passwordValidator,
                               authProvider: authProvider,
                               controller: _passwordController
                             ),
