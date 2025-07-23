@@ -48,8 +48,6 @@ class _AuthScreenState extends State<AuthScreen> {
     return null;
   }
 
-
-
   // Controllers
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
