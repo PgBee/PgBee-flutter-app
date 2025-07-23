@@ -57,9 +57,45 @@ class _AuthScreenState extends State<AuthScreen> {
   final TextEditingController _lNameController = TextEditingController();
 
   // form Key
-  final GlobalKey _signUpFormKey = GlobalKey<FormState>();
-  final GlobalKey _signInFormKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _signUpFormKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _signInFormKey = GlobalKey<FormState>();
 
+  // on Submit the Sign In Button
+  Future<void> onSubmitSignIn({
+    required AuthProvider provider
+  }) async{
+    if (_signInFormKey.currentState!.validate()) {
+      final success = await provider.signIn(
+        _emailController.text,
+        _passwordController.text,
+      );
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login successful')),
+        );
+        provider.changeAuth();
+      }
+    }
+  }
+
+  // on Submit the Sign Up Button
+  Future<void> onSubmitSignUp({
+    required AuthProvider provider
+  }) async{
+    if (_signUpFormKey.currentState!.validate()) {
+      final success = await provider.signUp(
+        _fNameController.text,
+        _lNameController.text,
+        _emailController.text,
+        _passwordController.text,
+      );
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registered successful')),
+        );
+      }
+    }
+  }
 
 
   @override
@@ -165,6 +201,8 @@ class _AuthScreenState extends State<AuthScreen> {
                             // Sign Up Submit Button
                             const SizedBox(height: 40),
                             ButtonWidgets.textButton(
+                              context: context,
+                              onPressed: onSubmitSignUp,
                               height: 56, 
                               width: double.maxFinite, 
                               name: 'Sign Up'
@@ -208,6 +246,8 @@ class _AuthScreenState extends State<AuthScreen> {
                             // Submit Button of Log in
                             const SizedBox(height: 40),
                             ButtonWidgets.textButton(
+                              context: context,
+                              onPressed: onSubmitSignIn,
                               height: 56, 
                               width: double.maxFinite, 
                               name: 'Login In'
