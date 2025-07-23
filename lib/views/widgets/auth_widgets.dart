@@ -160,7 +160,8 @@ class AuthWidgets {
     required String title,
     required TextEditingController controller,
     required String hintText,
-    required TextInputType type
+    required TextInputType type,
+    required String? Function(String?) validator
   }){
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,6 +185,7 @@ class AuthWidgets {
             ),
           ),
           child: TextFormField(
+            cursorColor: LightColor.black,
             keyboardType: type,
             controller: controller,
             decoration: InputDecoration(
@@ -191,6 +193,7 @@ class AuthWidgets {
               hintStyle: AppTheme.h6Style,
               border: InputBorder.none,
             ),
+            validator: validator
           ),
         ),
       ],
@@ -199,6 +202,7 @@ class AuthWidgets {
 
   // Password Form
   static Column passwordField({
+    required String? Function(String?) validator,
     required AuthProvider authProvider,
     required TextEditingController controller
   }){
@@ -235,6 +239,7 @@ class AuthWidgets {
                     hintStyle: AppTheme.h6Style,
                     border: InputBorder.none,
                   ),
+                  validator: validator,
                 ),
               ),
               GestureDetector(

@@ -14,6 +14,40 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+
+  // Validator
+  // first Name
+  String? firstNameValidator(String? value){
+    if(value == null || value.isEmpty){
+      return 'Enter First name';
+    }
+    return null;
+  }
+
+  // last name
+  String? lastNameValidator(String? value){
+    if(value == null || value.isEmpty){
+      return 'Enter Last name';
+    }
+    return null;
+  }
+
+  // Email 
+  String? validateEmail(String? value) {
+    if (value == null || value.isEmpty) return 'Enter email';
+    final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    if (!regex.hasMatch(value)) return 'Invalid email format';
+    return null;
+}
+
+  // Password
+  String? passwordValidator(String? value){
+    if (value == null || value.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    return null;
+  }
+
   // Controllers
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -21,9 +55,45 @@ class _AuthScreenState extends State<AuthScreen> {
   final TextEditingController _lNameController = TextEditingController();
 
   // form Key
-  final GlobalKey _signUpFormKey = GlobalKey<FormState>();
-  final GlobalKey _signInFormKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _signUpFormKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _signInFormKey = GlobalKey<FormState>();
 
+  // on Submit the Sign In Button
+  Future<void> onSubmitSignIn({
+    required AuthProvider provider
+  }) async{
+    if (_signInFormKey.currentState!.validate()) {
+      final success = await provider.signIn(
+        _emailController.text,
+        _passwordController.text,
+      );
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login successful')),
+        );
+        provider.changeAuth();
+      }
+    }
+  }
+
+  // on Submit the Sign Up Button
+  Future<void> onSubmitSignUp({
+    required AuthProvider provider
+  }) async{
+    if (_signUpFormKey.currentState!.validate()) {
+      final success = await provider.signUp(
+        _fNameController.text,
+        _lNameController.text,
+        _emailController.text,
+        _passwordController.text,
+      );
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registered successful')),
+        );
+      }
+    }
+  }
 
 
   @override
@@ -87,6 +157,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           children: [
                             // First Name
                             AuthWidgets.formField(
+                              validator: firstNameValidator,
                               type: TextInputType.name,
                               title: 'First name', 
                               controller: _fNameController, 
@@ -96,6 +167,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                             // Last Name
                             AuthWidgets.formField(
+                              validator: lastNameValidator,
                               type: TextInputType.name,
                               title: 'Last name', 
                               controller: _lNameController, 
@@ -105,6 +177,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                             // Email
                             AuthWidgets.formField(
+                              validator: validateEmail,
                               title: 'Email', 
                               controller: _emailController, 
                               hintText: 'Enter your email address', 
@@ -114,6 +187,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                             // Password
                             AuthWidgets.passwordField(
+                              validator: passwordValidator,
                               authProvider: authProvider,
                               controller: _passwordController
                             ),
@@ -125,6 +199,8 @@ class _AuthScreenState extends State<AuthScreen> {
                             // Sign Up Submit Button
                             const SizedBox(height: 40),
                             ButtonWidgets.textButton(
+                              context: context,
+                              onPressed: onSubmitSignUp,
                               height: 56, 
                               width: double.maxFinite, 
                               name: 'Sign Up'
@@ -142,6 +218,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                             // Email
                             AuthWidgets.formField(
+                              validator: validateEmail,
                               title: 'Email', 
                               controller: _emailController, 
                               hintText: 'Enter your email address', 
@@ -151,6 +228,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                             // Password
                             AuthWidgets.passwordField(
+                              validator: passwordValidator,
                               authProvider: authProvider,
                               controller: _passwordController
                             ),
@@ -166,6 +244,8 @@ class _AuthScreenState extends State<AuthScreen> {
                             // Submit Button of Log in
                             const SizedBox(height: 40),
                             ButtonWidgets.textButton(
+                              context: context,
+                              onPressed: onSubmitSignIn,
                               height: 56, 
                               width: double.maxFinite, 
                               name: 'Login In'
