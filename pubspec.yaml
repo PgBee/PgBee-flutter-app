@@ -20,6 +20,8 @@ dev_dependencies:
   google_fonts: ^6.2.1
   flutter_test:
     sdk: flutter
+
+
 flutter:
   uses-material-design: true
   # To add assets of Application
