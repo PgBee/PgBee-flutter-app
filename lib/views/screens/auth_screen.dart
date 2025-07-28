@@ -15,8 +15,8 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
 
-  // Validator
-  // first Name
+  // Validators
+  // first Name Validator 
   String? firstNameValidator(String? value){
     if(value == null || value.isEmpty){
       return 'Enter First name';
@@ -24,7 +24,7 @@ class _AuthScreenState extends State<AuthScreen> {
     return null;
   }
 
-  // last name
+  // last name Validator
   String? lastNameValidator(String? value){
     if(value == null || value.isEmpty){
       return 'Enter Last name';
@@ -32,7 +32,7 @@ class _AuthScreenState extends State<AuthScreen> {
     return null;
   }
 
-  // Email 
+  // Email Validator
   String? validateEmail(String? value) {
     if (value == null || value.isEmpty) return 'Enter email';
     final regex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
@@ -40,7 +40,7 @@ class _AuthScreenState extends State<AuthScreen> {
     return null;
 }
 
-  // Password
+  // Password Validator
   String? passwordValidator(String? value){
     if (value == null || value.length < 6) {
       return 'Password must be at least 6 characters';
