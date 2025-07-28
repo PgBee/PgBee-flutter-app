@@ -6,6 +6,6 @@ class LightColor{
   static Color appPrimary = Color(0xFF424242);
   static Color appSecondary = Color(0xFF43FF25);
   static Color appTertiary = Color(0xFFFFE536);
-  static Color grey = Color(0x80424242);
+  static Color grey = Color(0xFF424242);
   static Color shadowColor = Color(0x0C2A2A2A);
 }

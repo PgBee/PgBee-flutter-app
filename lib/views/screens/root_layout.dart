@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:pgbee/core/constants/colors.dart';
 import 'package:pgbee/providers/screens_provider.dart';
+import 'package:pgbee/views/screens/inbox_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:pgbee/views/screens/home_screen.dart';
 
 class RootLayout extends StatefulWidget{
   @override
@@ -11,15 +13,11 @@ class RootLayout extends StatefulWidget{
 class _StateRootLayout extends State<RootLayout> {
 
   final List<Widget> _screens = [
-    Center(
-      child: Text("Home"),
-    ),
+    HomeScreen(),
     Center(
       child: Text("PG Details"),
     ),
-    Center(
-      child: Text("INbox"),
-    ),
+    InboxScreen(),
     Center(
       child: Text("Profile"),
     ),
@@ -31,6 +29,7 @@ class _StateRootLayout extends State<RootLayout> {
     int selectedIndex = pageProvider.currentIndex;
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: LightColor.background,
         title: Image.asset(
           'assets/images/logo.png',
           width: 230,
