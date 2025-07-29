@@ -6,51 +6,98 @@ class AuthProvider extends ChangeNotifier {
   final AuthController _controller;
   AuthProvider(this._controller);
 
-
-  // SignUp or SignIn
   bool _isSignUp = false;
   bool get isSignUp => _isSignUp;
 
-  void changeAuth(){
+  void changeAuth() {
     _isSignUp = !_isSignUp;
     notifyListeners();
   }
 
-  // Password Visible or Not
   bool _obscurePassword = true;
   bool get obscurePassword => _obscurePassword;
 
-  void changeVisibility(){
+  void changeVisibility() {
     _obscurePassword = !_obscurePassword;
     notifyListeners();
   }
 
-  // Terms and Condition Terms
   bool _agreeToTerms = false;
   bool get agreeToTerms => _agreeToTerms;
 
-  void changeAgreeTerms(){
+  void changeAgreeTerms() {
     _agreeToTerms = !_agreeToTerms;
     notifyListeners();
-  } 
+  }
 
-  // Login and Signup Operation
   bool isLoggedIn = false;
   String? errorMessage;
 
   Future<bool> signIn(String email, String password) async {
-    final result = await _controller.login(email, password);
-    isLoggedIn = result;
-    errorMessage = result ? null : "Invalid email or password";
-    notifyListeners();
-    return result;
+    try {
+      final result = await _controller.login(email, password);
+      isLoggedIn = result;
+      if (result) {
+        errorMessage = null;
+      } else {
+        errorMessage = "Invalid email or password. Please check your credentials.";
+      }
+      notifyListeners();
+      return result;
+    } catch (e) {
+      errorMessage = "Login failed. Please try again.";
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<bool> signUp(String first, String last, String email, String pass) async {
-    final user = AuthModel(firstName: first, lastName: last, email: email, password: pass);
-    final result = await _controller.register(user);
-    errorMessage = result ? null : "Email already registered";
-    notifyListeners();
-    return result;
+    if (!_agreeToTerms) {
+      errorMessage = "Please agree to the terms and conditions";
+      notifyListeners();
+      return false;
+    }
+    
+    try {
+      final user = AuthModel(
+        email: email,
+        password: pass,
+        firstName: first,
+        lastName: last,
+        role: "user", // Adjust based on backend requirements
+      );
+      final result = await _controller.register(user);
+      if (result) {
+        isLoggedIn = true;
+        errorMessage = null;
+      } else {
+        errorMessage = "Registration failed. Email might already be registered.";
+      }
+      notifyListeners();
+      return result;
+    } catch (e) {
+      errorMessage = "Registration failed. Please try again.";
+      notifyListeners();
+      return false;
+    }
   }
+  Future<bool> googleSignIn() async {
+  try {
+    // Call the backend Google Sign-In endpoint
+    final result = await _controller.googleSignIn();
+    if (result) {
+      isLoggedIn = true;
+      errorMessage = null;
+      notifyListeners();
+      return true;
+    }
+    errorMessage = "Failed to authenticate with Google";
+    notifyListeners();
+    return false;
+  } catch (e) {
+    errorMessage = "Google Sign-In error: ${e.toString()}";
+    notifyListeners();
+    return false;
+  }
+}
 }
