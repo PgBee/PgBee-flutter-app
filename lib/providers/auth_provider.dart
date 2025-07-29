@@ -82,22 +82,22 @@ class AuthProvider extends ChangeNotifier {
     }
   }
   Future<bool> googleSignIn() async {
-  try {
-    // Call the backend Google Sign-In endpoint
-    final result = await _controller.googleSignIn();
-    if (result) {
-      isLoggedIn = true;
-      errorMessage = null;
+    try {
+      // Call the backend Google Sign-In endpoint
+      final result = await _controller.googleSignIn();
+      if (result) {
+        isLoggedIn = true;
+        errorMessage = null;
+        notifyListeners();
+        return true;
+      }
+      errorMessage = "Failed to authenticate with Google";
       notifyListeners();
-      return true;
+      return false;
+    } catch (e) {
+      errorMessage = "Google Sign-In error: ${e.toString()}";
+      notifyListeners();
+      return false;
     }
-    errorMessage = "Failed to authenticate with Google";
-    notifyListeners();
-    return false;
-  } catch (e) {
-    errorMessage = "Google Sign-In error: ${e.toString()}";
-    notifyListeners();
-    return false;
   }
-}
 }

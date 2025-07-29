@@ -3,6 +3,8 @@ import 'package:pgbee/core/routing/route.dart';
 import 'package:pgbee/core/theme/app_theme.dart';
 import 'package:pgbee/providers/auth_provider.dart';
 import 'package:pgbee/providers/screens_provider.dart';
+import 'package:pgbee/providers/hostel_provider.dart';
+import 'package:pgbee/providers/enquiry_provider.dart';
 //import 'package:pgbee/views/screens/landing_page.dart';
 //import 'package:pgbee/views/screens/root_layout.dart';
 
@@ -16,7 +18,9 @@ void main() {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => locator<AuthProvider>()),
-        ChangeNotifierProvider(create: (_) => ScreensProvider())
+        ChangeNotifierProvider(create: (_) => ScreensProvider()),
+        ChangeNotifierProvider(create: (_) => HostelProvider()),
+        ChangeNotifierProvider(create: (_) => EnquiryProvider()),
       ],
       child: PgBee(),
     )

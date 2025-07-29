@@ -3,6 +3,8 @@ import 'package:pgbee/core/constants/colors.dart';
 import 'package:pgbee/providers/screens_provider.dart';
 import 'package:pgbee/views/screens/Privacy_policy.dart';
 import 'package:pgbee/views/screens/home_screen.dart';
+import 'package:pgbee/views/screens/pg_details_screen.dart';
+import 'package:pgbee/views/screens/inbox_screen.dart';
 import 'package:pgbee/views/screens/profile.dart';
 import 'package:pgbee/views/screens/profile_settings.dart';
 import 'package:pgbee/views/screens/profile_edit.dart';
@@ -29,8 +31,8 @@ class _StateRootLayout extends State<RootLayout> {
 
   final List<Widget> _screens = [
     HomePage(),
-    Center(child: Text("PG Details")),
-    Center(child: Text("Inbox")),
+    PgDetailsScreen(),
+    InboxScreen(),
     // Profile section will be dynamically updated
     Container(), // Placeholder, will be set dynamically
   ];

@@ -102,16 +102,47 @@ static Container googleAuth({
     ),
     child: TextButton.icon(
       onPressed: () async {
-        final result = await authProvider.googleSignIn();
-        if (result) {
+        // Show loading dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return const AlertDialog(
+              content: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(width: 16),
+                  Text('Signing in with Google...'),
+                ],
+              ),
+            );
+          },
+        );
+
+        try {
+          // Call Google Sign-In service
+          final result = await authProvider.googleSignIn();
+          
+          // Close loading dialog
+          Navigator.of(context).pop();
+          
+          if (result) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(authProvider.isSignUp ? 'Signed up with Google successfully!' : 'Logged in with Google successfully!')),
+            );
+            // Navigate to root layout after successful Google sign in
+            Navigator.pushReplacementNamed(context, '/home');
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(authProvider.errorMessage ?? 'Google authentication failed')),
+            );
+          }
+        } catch (e) {
+          // Close loading dialog
+          Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(authProvider.isSignUp ? 'Signed up with Google' : 'Logged in with Google')),
-          );
-          // Navigate to root layout after successful Google sign in
-          Navigator.pushReplacementNamed(context, '/home');
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(authProvider.errorMessage ?? 'Google authentication failed')),
+            SnackBar(content: Text('Google Sign-In error: ${e.toString()}')),
           );
         }
       },

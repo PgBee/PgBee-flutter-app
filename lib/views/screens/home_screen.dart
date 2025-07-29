@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/hostel_provider.dart';
 
 
 class HomePage extends StatelessWidget {
@@ -264,7 +266,14 @@ class _OwnerUpdateSectionState extends State<OwnerUpdateSection> {
   @override
   void initState() {
     super.initState();
-    // TODO: Fetch the initial student count from your provider or backend
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadHostelData();
+    });
+  }
+
+  void _loadHostelData() {
+    final hostelProvider = Provider.of<HostelProvider>(context, listen: false);
+    hostelProvider.loadHostelDetails('owner_1'); // Replace with actual owner ID
   }
 
   void _decrement() {
@@ -287,84 +296,108 @@ class _OwnerUpdateSectionState extends State<OwnerUpdateSection> {
       _message = null;
     });
 
-    // TODO: Integrate with backend API to update the count
-    // Example:
-    // final success = await Provider.of<YourProvider>(context, listen: false).updateStudents(_studentCount);
-    await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
+    final hostelProvider = Provider.of<HostelProvider>(context, listen: false);
+    final success = await hostelProvider.updateAdmittedStudents(_studentCount);
     
     setState(() {
       _isLoading = false;
-      // In a real app, you'd check if the API call was successful
-      _message = 'Updated successfully to $_studentCount!'; 
+      if (success) {
+        _message = 'Updated successfully to $_studentCount students!';
+      } else {
+        _message = 'Failed to update student count';
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shadowColor: Colors.black.withOpacity(0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Text(
-              'Update Admitted Students',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    return Consumer<HostelProvider>(
+      builder: (context, hostelProvider, child) {
+        // Update local count when hostel data changes
+        if (hostelProvider.hostel != null && _studentCount != hostelProvider.hostel!.admittedStudents) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              _studentCount = hostelProvider.hostel!.admittedStudents;
+            });
+          });
+        }
+
+        return Card(
+          elevation: 4,
+          shadowColor: Colors.black.withOpacity(0.1),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Decrement Button
-                IconButton(
-                  icon: const Icon(Icons.remove_circle_outline, size: 36),
-                  onPressed: _decrement,
-                  color: Theme.of(context).colorScheme.primary,
+                const Text(
+                  'Update Admitted Students',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
                 ),
-                // Count Display
-                Text(
-                  '$_studentCount',
-                  style: const TextStyle(fontSize: 42, fontWeight: FontWeight.bold),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Decrement Button
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline, size: 36),
+                      onPressed: _decrement,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    // Count Display
+                    Text(
+                      '$_studentCount',
+                      style: const TextStyle(fontSize: 42, fontWeight: FontWeight.bold),
+                    ),
+                    // Increment Button
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline, size: 36),
+                      onPressed: _increment,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ],
                 ),
-                // Increment Button
-                IconButton(
-                  icon: const Icon(Icons.add_circle_outline, size: 36),
-                  onPressed: _increment,
-                  color: Theme.of(context).colorScheme.primary,
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      backgroundColor: Colors.black,
+                    ),
+                    onPressed: (_isLoading || hostelProvider.isLoading) ? null : _updateStudents,
+                    child: (_isLoading || hostelProvider.isLoading)
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white))
+                        : const Text('Confirm Update', style: TextStyle(fontSize: 16, color: Colors.white)),
+                  ),
                 ),
+                if (_message != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _message!,
+                    style: TextStyle(
+                      color: _message!.contains('Failed') ? Colors.red : Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+                if (hostelProvider.errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    hostelProvider.errorMessage!,
+                    style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ],
             ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  backgroundColor: Colors.black,
-                ),
-                onPressed: _isLoading ? null : _updateStudents,
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white))
-                    : const Text('Confirm Update', style: TextStyle(fontSize: 16, color: Colors.white)),
-              ),
-            ),
-            if (_message != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                _message!,
-                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
