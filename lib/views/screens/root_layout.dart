@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pgbee/OwnerUI/profile.dart';
 import 'package:pgbee/core/constants/colors.dart';
 import 'package:pgbee/providers/screens_provider.dart';
 import 'package:pgbee/views/screens/inbox_screen.dart';
@@ -18,9 +19,7 @@ class _StateRootLayout extends State<RootLayout> {
       child: Text("PG Details"),
     ),
     InboxScreen(),
-    Center(
-      child: Text("Profile"),
-    ),
+    ProfilePage(),
   ];
 
   @override
