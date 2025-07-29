@@ -13,6 +13,8 @@ import 'package:pgbee/views/screens/terms_conditions.dart';
 import 'package:provider/provider.dart';
 
 class RootLayout extends StatefulWidget {
+  const RootLayout({super.key});
+
   @override
   State<RootLayout> createState() => _StateRootLayout();
 }

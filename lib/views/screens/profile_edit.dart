@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:pgbee/providers/screens_provider.dart';
 
 class ProfileEditPage extends StatefulWidget {
-  const ProfileEditPage({Key? key}) : super(key: key);
+  const ProfileEditPage({super.key});
 
   @override
   State<ProfileEditPage> createState() => _ProfileEditPageState();

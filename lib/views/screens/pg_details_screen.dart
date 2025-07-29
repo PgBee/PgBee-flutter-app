@@ -6,6 +6,8 @@ import '../../providers/hostel_provider.dart';
 import '../../models/hostel_model.dart';
 
 class PgDetailsScreen extends StatefulWidget {
+  const PgDetailsScreen({super.key});
+
   @override
   _PgDetailsScreenState createState() => _PgDetailsScreenState();
 }
@@ -243,7 +245,7 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
                   );
                 }
 
-                return Container(
+                return SizedBox(
                   height: 120,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
@@ -514,7 +516,7 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
   }
 
   void _addPhotos() async {
-    final List<XFile>? images = await _picker.pickMultiImage();
+    final List<XFile> images = await _picker.pickMultiImage();
     if (images != null && images.isNotEmpty) {
       final hostelProvider = Provider.of<HostelProvider>(context, listen: false);
       final imagePaths = images.map((image) => image.path).toList();

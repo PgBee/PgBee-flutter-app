@@ -4,6 +4,8 @@ import 'package:pgbee/providers/screens_provider.dart';
 import 'package:provider/provider.dart';
 
 class PrivacyPolicyPage extends StatelessWidget {
+  const PrivacyPolicyPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(

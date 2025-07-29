@@ -4,6 +4,8 @@ import 'package:pgbee/providers/screens_provider.dart';
 import 'package:provider/provider.dart';
 
 class TermsConditionsPage extends StatelessWidget {
+  const TermsConditionsPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
