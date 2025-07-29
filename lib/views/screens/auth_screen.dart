@@ -59,11 +59,10 @@ class _AuthScreenState extends State<AuthScreen> {
   final GlobalKey<FormState> _signInFormKey = GlobalKey<FormState>();
 
   // on Submit the Sign In Button
-  Future<void> onSubmitSignIn({
-    required AuthProvider provider
-  }) async{
+  Future<void> onSubmitSignIn() async{
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (_signInFormKey.currentState!.validate()) {
-      final success = await provider.signIn(
+      final success = await authProvider.signIn(
         _emailController.text,
         _passwordController.text,
       );
@@ -71,17 +70,21 @@ class _AuthScreenState extends State<AuthScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Login successful')),
         );
-        provider.changeAuth();
+        // Navigate to root layout after successful login
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(authProvider.errorMessage ?? 'Login failed')),
+        );
       }
     }
   }
 
   // on Submit the Sign Up Button
-  Future<void> onSubmitSignUp({
-    required AuthProvider provider
-  }) async{
+  Future<void> onSubmitSignUp() async{
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (_signUpFormKey.currentState!.validate()) {
-      final success = await provider.signUp(
+      final success = await authProvider.signUp(
         _fNameController.text,
         _lNameController.text,
         _emailController.text,
@@ -89,7 +92,13 @@ class _AuthScreenState extends State<AuthScreen> {
       );
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registered successful')),
+          const SnackBar(content: Text('Registration successful')),
+        );
+        // Navigate to root layout after successful registration
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(authProvider.errorMessage ?? 'Registration failed')),
         );
       }
     }
@@ -142,7 +151,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       const SizedBox(height: 24),
                       
                       // Google Sign In/Up button
-                      AuthWidgets.googleAuth(authProvider: authProvider),
+                      AuthWidgets.googleAuth(context: context, authProvider: authProvider),
                       const SizedBox(height: 24),
 
                       // OR divider

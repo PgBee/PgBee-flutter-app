@@ -3,6 +3,10 @@ import 'package:pgbee/core/routing/route.dart';
 import 'package:pgbee/core/theme/app_theme.dart';
 import 'package:pgbee/providers/auth_provider.dart';
 import 'package:pgbee/providers/screens_provider.dart';
+//import 'package:pgbee/views/screens/landing_page.dart';
+//import 'package:pgbee/views/screens/root_layout.dart';
+
+
 import 'package:provider/provider.dart';
 import 'package:pgbee/config/locator.dart';
 
@@ -30,6 +34,7 @@ class PgBee extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'PgBee',
       theme: AppTheme.appTheme,
+      // Set the initial screen to AuthScreen
     );
   }
 }

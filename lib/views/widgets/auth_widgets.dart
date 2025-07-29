@@ -5,6 +5,8 @@ import 'package:pgbee/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
 
+
+
 class AuthWidgets {
 
   static Consumer authChoice(){
@@ -81,47 +83,61 @@ class AuthWidgets {
   }
 
   // Google SignUp or Sign In Widget
-  static Container googleAuth({
-    required AuthProvider authProvider
-  }){
-    return Container(
-      width: double.infinity,
-      height: 56,
-      decoration: ShapeDecoration(
-        color: LightColor.background,
+static Container googleAuth({
+  required BuildContext context,
+  required AuthProvider authProvider,
+}) {
+  return Container(
+    width: double.infinity,
+    height: 56,
+    decoration: ShapeDecoration(
+      color: LightColor.background,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(
+          width: 1,
+          color: LightColor.grey,
+        ),
+        borderRadius: BorderRadius.circular(25),
+      ),
+    ),
+    child: TextButton.icon(
+      onPressed: () async {
+        final result = await authProvider.googleSignIn();
+        if (result) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(authProvider.isSignUp ? 'Signed up with Google' : 'Logged in with Google')),
+          );
+          // Navigate to root layout after successful Google sign in
+          Navigator.pushReplacementNamed(context, '/home');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(authProvider.errorMessage ?? 'Google authentication failed')),
+          );
+        }
+      },
+      icon: Image.network(
+        'https://www.google.com/favicon.ico',
+        width: 20,
+        height: 20,
+      ),
+      label: Text(
+        authProvider.isSignUp ? 'Sign up with Google' : 'Log In with Google',
+        style: TextStyle(
+          color: LightColor.black,
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+      style: TextButton.styleFrom(
+        backgroundColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          side: BorderSide(
-            width: 1,
-            color: LightColor.grey,
-          ),
           borderRadius: BorderRadius.circular(25),
         ),
+        padding: const EdgeInsets.symmetric(vertical: 12),
       ),
-      child: TextButton.icon(
-        onPressed: () {},
-        icon: Image.network(
-          'https://www.google.com/favicon.ico',
-          width: 20,
-          height: 20,
-        ),
-        label: Text(
-          authProvider.isSignUp ? 'Sign up with Google' : 'Log In with Google',
-          style: TextStyle(
-            color: LightColor.black,
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        style: TextButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-        ),
-      ),
-    );
-  }
+    ),
+  );
+}
 
   // Divider
   static Row divider(){

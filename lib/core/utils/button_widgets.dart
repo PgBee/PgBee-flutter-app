@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:pgbee/providers/auth_provider.dart';
-import 'package:provider/provider.dart';
 
 class ButtonWidgets {
   static GestureDetector textButton({
-    required Future<void> Function({required AuthProvider provider}) onPressed,
+    required Future<void> Function() onPressed,
     required double height,
     required double width,
     required String name,
     required BuildContext context
   }){
     return GestureDetector(
-      onTap: (){
-        onPressed(provider: Provider.of<AuthProvider>(context, listen: false));
-      },
+      onTap: onPressed,
       child: Container(
         width: width,
         height: height,

@@ -14,7 +14,8 @@ dependencies:
   google_sign_in: ^7.1.1
   dio: ^5.8.0+1
   get_it: ^8.0.3
-  image_picker: ^1.0.0
+  image_picker: ^1.1.2
+  shared_preferences: ^2.5.3
 
 dev_dependencies:
   flutter_lints: ^5.0.0
@@ -31,6 +32,7 @@ flutter:
     - assets/images/PgBee.svg
     - assets/images/logo.png
     - assets/images/recaptcha.png
+    - assets/images/background.png
 
   # To add fonts of Application
   fonts:
