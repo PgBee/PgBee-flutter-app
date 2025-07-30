@@ -7,9 +7,9 @@ environment:
   sdk: ^3.8.1
 
 dependencies:
-  cupertino_icons: ^1.0.8
   flutter:
     sdk: flutter
+  cupertino_icons: ^1.0.8
   provider: ^6.1.5
   google_sign_in_all_platforms: ^1.2.1
   dio: ^5.8.0+1
@@ -19,24 +19,27 @@ dependencies:
   oauth2: ^2.0.3
 
 dev_dependencies:
-  flutter_lints: ^5.0.0
-  google_fonts: ^6.2.1
   flutter_test:
     sdk: flutter
+  flutter_lints: ^5.0.0
+  google_fonts: ^6.2.1
+  flutter_launcher_icons: ^0.13.1
 
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.png"
 
 flutter:
   uses-material-design: true
-  # To add assets of Application
+
   assets:
     - assets/images/PgBee.svg
     - assets/images/logo.png
     - assets/images/recaptcha.png
     - assets/images/background.png
 
-  # To add fonts of Application
   fonts:
     - family: Poppins
       fonts:
         - asset: assets/fonts/Poppins-Regular.ttf
-
