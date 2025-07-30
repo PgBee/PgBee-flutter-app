@@ -157,7 +157,6 @@ class _ProfileMenuTile extends StatelessWidget {
   final Color? trailingColor;
 
   const _ProfileMenuTile({
-    super.key,
     required this.icon,
     required this.title,
     required this.onTap,

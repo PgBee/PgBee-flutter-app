@@ -517,7 +517,7 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
 
   void _addPhotos() async {
     final List<XFile> images = await _picker.pickMultiImage();
-    if (images != null && images.isNotEmpty) {
+    if (images.isNotEmpty) {
       final hostelProvider = Provider.of<HostelProvider>(context, listen: false);
       final imagePaths = images.map((image) => image.path).toList();
       

@@ -49,6 +49,8 @@ class _StateRootLayout extends State<RootLayout> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: LightColor.background,
+        automaticallyImplyLeading: false,
         title: Image.asset(
           'assets/images/logo.png',
           width: 230,
