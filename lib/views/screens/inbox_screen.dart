@@ -7,6 +7,8 @@ import '../../models/enquiry_model.dart';
 import '../../services/local_storage_service.dart';
 
 class InboxScreen extends StatefulWidget {
+  const InboxScreen({super.key});
+
   @override
   _InboxScreenState createState() => _InboxScreenState();
 }
@@ -127,7 +129,7 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
             ),
             SizedBox(height: 16),
             Text(
-              'No ${status} enquiries',
+              'No $status enquiries',
               style: TextStyle(
                 fontSize: 18,
                 color: LightColor.grey,
@@ -390,8 +392,8 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Accept'),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: Text('Accept'),
           ),
         ],
       ),
@@ -470,8 +472,8 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Deny'),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: Text('Deny'),
           ),
         ],
       ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:pgbee/core/constants/colors.dart';
+import 'package:pgbee/core/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import 'package:pgbee/providers/hostel_provider.dart';
 import 'package:pgbee/services/local_storage_service.dart';
@@ -10,17 +12,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: 393,
-        padding: const EdgeInsets.only(top: 64),
-        clipBehavior: Clip.antiAlias,
-        decoration: const ShapeDecoration(
-          color: Color(0xFFFAFAFA),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-          ),
-        ),
-        child: SingleChildScrollView(
+      body: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -40,7 +32,6 @@ class HomePage extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }
@@ -361,9 +352,10 @@ class _OwnerUpdateSectionState extends State<OwnerUpdateSection> {
         }
 
         return Card(
+          color: LightColor.background,
           elevation: 4,
-          shadowColor: Colors.black.withOpacity(0.1),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shadowColor: LightColor.shadowColor,
+          shape: AppTheme.borderShape,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
@@ -379,7 +371,7 @@ class _OwnerUpdateSectionState extends State<OwnerUpdateSection> {
                   children: [
                     // Decrement Button
                     IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, size: 36),
+                      icon: Icon(Icons.remove_circle_outline, size: 36,color: LightColor.black,),
                       onPressed: _decrement,
                       color: Theme.of(context).colorScheme.primary,
                     ),
@@ -390,7 +382,7 @@ class _OwnerUpdateSectionState extends State<OwnerUpdateSection> {
                     ),
                     // Increment Button
                     IconButton(
-                      icon: const Icon(Icons.add_circle_outline, size: 36),
+                      icon: Icon(Icons.add_circle_outline, size: 36,color: LightColor.black,),
                       onPressed: _increment,
                       color: Theme.of(context).colorScheme.primary,
                     ),

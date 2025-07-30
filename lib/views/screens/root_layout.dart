@@ -13,6 +13,8 @@ import 'package:pgbee/views/screens/terms_conditions.dart';
 import 'package:provider/provider.dart';
 
 class RootLayout extends StatefulWidget {
+  const RootLayout({super.key});
+
   @override
   State<RootLayout> createState() => _StateRootLayout();
 }
@@ -47,6 +49,8 @@ class _StateRootLayout extends State<RootLayout> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: LightColor.background,
+        automaticallyImplyLeading: false,
         title: Image.asset(
           'assets/images/logo.png',
           width: 230,

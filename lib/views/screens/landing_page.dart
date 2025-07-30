@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 import 'package:pgbee/views/screens/auth_screen.dart';
+import 'package:pgbee/views/screens/root_layout.dart';
 
 class NetworkingArenaPage extends StatefulWidget {
-  const NetworkingArenaPage({Key? key}) : super(key: key);
+  const NetworkingArenaPage({super.key});
 
   @override
   State<NetworkingArenaPage> createState() => _NetworkingArenaPageState();
@@ -186,7 +187,7 @@ class _NetworkingArenaPageState extends State<NetworkingArenaPage>
                   const Spacer(flex: 1),
 
                   // Enhanced 3D Globe with improved visual effects
-                  Container(
+                  SizedBox(
                     height: 420,
                     child: AnimatedBuilder(
                       animation: Listenable.merge([
@@ -401,7 +402,7 @@ class _NetworkingArenaPageState extends State<NetworkingArenaPage>
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => AuthScreen(),
+                                  builder: (context) => RootLayout(),
                                 ),
                               );
                             },

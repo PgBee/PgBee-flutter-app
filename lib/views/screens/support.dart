@@ -4,6 +4,8 @@ import 'package:pgbee/providers/screens_provider.dart';
 import 'package:provider/provider.dart';
 
 class SupportPage extends StatefulWidget {
+  const SupportPage({super.key});
+
   @override
   _SupportPageState createState() => _SupportPageState();
 }

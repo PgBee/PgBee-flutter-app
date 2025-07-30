@@ -4,7 +4,7 @@ import 'package:pgbee/providers/screens_provider.dart';
 import 'package:pgbee/providers/auth_provider.dart';
 
 class SecuritySettingsPage extends StatefulWidget {
-  const SecuritySettingsPage({Key? key}) : super(key: key);
+  const SecuritySettingsPage({super.key});
 
   @override
   State<SecuritySettingsPage> createState() => _SecuritySettingsPageState();
@@ -212,14 +212,13 @@ class _ProfileMenuTile extends StatelessWidget {
   final Color? trailingColor;
 
   const _ProfileMenuTile({
-    Key? key,
     required this.icon,
     required this.title,
     required this.onTap,
     this.titleStyle,
     this.iconColor,
     this.trailingColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

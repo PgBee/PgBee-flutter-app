@@ -31,4 +31,13 @@ class AppTheme {
 
 
   static EdgeInsets screenPadding = EdgeInsets.symmetric(vertical: 16);
+
+  // Border Shape
+  static RoundedRectangleBorder borderShape = RoundedRectangleBorder(
+    side: BorderSide(
+      color: LightColor.grey,
+      width: 1,
+    ),
+    borderRadius: BorderRadius.circular(10)
+  );
 }

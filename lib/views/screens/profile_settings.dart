@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pgbee/providers/screens_provider.dart';
 class ProfileSettings extends StatefulWidget {
+  const ProfileSettings({super.key});
+
   @override
   _ProfileSettingsState createState() => _ProfileSettingsState();
 }
@@ -54,7 +56,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
                   ),
                 ),
               SizedBox(height: 40),
-              Container(
+              SizedBox(
                 width: double.infinity,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -183,7 +185,7 @@ class _ProfileSettingsState extends State<ProfileSettings> {
   }
 
   Widget buildSwitchTile(String title, bool value, Function(bool) onChanged) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       child: Row(
         mainAxisSize: MainAxisSize.min,
