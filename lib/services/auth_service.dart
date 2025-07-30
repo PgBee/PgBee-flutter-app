@@ -32,11 +32,16 @@ class AuthService {
         final data = response.data;
         return {
           'success': true,
-          'data': data,
-          'accessToken': data['accessToken'],
-          'refreshToken': data['refreshToken'],
+          'data': data ?? {},
+          'accessToken': data['accessToken'] ?? '',
+          'refreshToken': data['refreshToken'] ?? '',
           'message': data['message'] ?? 'Login successful',
-          'user': data['user'], // Include user data if available
+          'user': data['user'] ?? {
+            'id': '',
+            'email': email,
+            'name': '',
+            'role': 'student'
+          },
         };
       }
       
@@ -206,7 +211,7 @@ class AuthService {
 
       // Authenticate with backend using Google credentials
       try {
-        final response = await _dio.post('/auth/google', data: {
+        final response = await _dio.post('/auth/google/callback', data: {
           'access_token': userData['accessToken'],
           'id_token': userData['idToken'],
           'email': userData['email'],
@@ -218,9 +223,9 @@ class AuthService {
           final data = response.data;
           return {
             'success': true,
-            'data': data,
-            'accessToken': data['accessToken'],
-            'refreshToken': data['refreshToken'],
+            'data': data ?? {},
+            'accessToken': data['accessToken'] ?? '',
+            'refreshToken': data['refreshToken'] ?? '',
             'message': data['message'] ?? 'Google Sign-In successful',
             'user': data['user'] ?? userData,
           };

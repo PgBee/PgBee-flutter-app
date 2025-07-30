@@ -251,51 +251,47 @@ class OwnerUpdateSection extends StatefulWidget {
 }
 
 class _OwnerUpdateSectionState extends State<OwnerUpdateSection> {
-  int _studentCount = 0; // Initial value, should be fetched from backend
+  int _studentCount = 0;  // Initialize to 0
   bool _isLoading = false;
   String? _message;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadHostelData();
-      _loadPersistentCounter();
-    });
+    // Load data in order of priority
+    _initializeStudentCount();
   }
 
-  void _loadHostelData() {
+    Future<void> _initializeStudentCount() async {
+    // First try to load from local storage
+    final persistentCount = await LocalStorageService.getAdmittedStudentsCount();
+    if (mounted) {
+      setState(() {
+        _studentCount = persistentCount;
+      });
+    }
     final hostelProvider = Provider.of<HostelProvider>(context, listen: false);
-    // Only load if we don't have data yet - prevent resetting saved data
     if (hostelProvider.hostel == null) {
-      hostelProvider.loadHostelDetails('owner_1'); // Replace with actual owner ID
+      await hostelProvider.loadHostelDetails('owner_1');
+    } else if (hostelProvider.hostel?.admittedStudents != null) {
+      setState(() {
+        _studentCount = hostelProvider.hostel!.admittedStudents;
+      });
     }
   }
 
-  Future<void> _loadPersistentCounter() async {
-    try {
-      final persistentCount = await LocalStorageService.getAdmittedStudentsCount();
-      if (mounted) {
-        setState(() {
-          _studentCount = persistentCount;
-        });
-      }
-    } catch (e) {
-      print('Error loading persistent counter: $e');
-    }
-  }
 
   void _decrement() {
     if (_studentCount > 0) {
       setState(() {
-        _studentCount--;
+        _studentCount = _studentCount - 1;
       });
     }
   }
 
   void _increment() {
     setState(() {
-      _studentCount++;
+      _studentCount = _studentCount + 1;
     });
   }
 

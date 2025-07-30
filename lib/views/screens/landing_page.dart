@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 import 'package:pgbee/views/screens/auth_screen.dart';
-import 'package:pgbee/views/screens/root_layout.dart';
+//import 'package:pgbee/views/screens/root_layout.dart';
 
 class NetworkingArenaPage extends StatefulWidget {
   const NetworkingArenaPage({super.key});
@@ -402,7 +402,7 @@ class _NetworkingArenaPageState extends State<NetworkingArenaPage>
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => RootLayout(),
+                                  builder: (context) => AuthScreen(),
                                 ),
                               );
                             },
