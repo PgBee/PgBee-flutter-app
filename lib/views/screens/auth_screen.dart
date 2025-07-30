@@ -5,6 +5,7 @@ import 'package:pgbee/core/utils/button_widgets.dart';
 import 'package:pgbee/providers/auth_provider.dart';
 import 'package:pgbee/views/widgets/auth_widgets.dart';
 import 'package:provider/provider.dart';
+import 'package:pgbee/models/auth_model.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -84,12 +85,13 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> onSubmitSignUp() async{
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (_signUpFormKey.currentState!.validate()) {
-      final success = await authProvider.signUp(
-        _fNameController.text,
-        _lNameController.text,
-        _emailController.text,
-        _passwordController.text,
+      final authModel = AuthModel(
+        firstName: _fNameController.text,
+        lastName: _lNameController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
       );
+      final success = await authProvider.signUp(authModel);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Registration successful')),

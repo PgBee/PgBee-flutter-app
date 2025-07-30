@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-//import 'package:pgbee/views/screens/profile_edit.dart';
-//import 'package:pgbee/views/screens/profile_settings.dart';
-//import 'package:pgbee/core/routing/route.dart';
 import 'package:provider/provider.dart';
 import 'package:pgbee/providers/screens_provider.dart';
+import 'package:pgbee/providers/auth_provider.dart';
 
 class SecuritySettingsPage extends StatefulWidget {
   const SecuritySettingsPage({super.key});
@@ -124,8 +122,65 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
                       _ProfileMenuTile(
                         icon: Icons.logout,
                         title: "Logout",
-                        onTap: () {
-                          // handle logout
+                        onTap: () async {
+                          // Show confirmation dialog
+                          final shouldLogout = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Logout'),
+                              content: const Text('Are you sure you want to logout?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(true),
+                                  child: const Text(
+                                    'Logout',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (shouldLogout == true) {
+                            try {
+                              // Show loading indicator
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (context) => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+
+                              // Perform logout
+                              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                              await authProvider.signOut();
+
+                              // Close loading dialog
+                              Navigator.of(context).pop();
+
+                              // Navigate to landing page instead of auth screen
+                              Navigator.of(context).pushNamedAndRemoveUntil(
+                                '/landing',
+                                (route) => false, // Remove all previous routes
+                              );
+                            } catch (e) {
+                              // Close loading dialog if still open
+                              Navigator.of(context).pop();
+                              
+                              // Show error
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Logout failed: ${e.toString()}'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
                         },
                         titleStyle: TextStyle(
                           color: Colors.red,

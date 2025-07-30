@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:pgbee/core/constants/colors.dart';
 import 'package:pgbee/core/theme/app_theme.dart';
 import 'package:provider/provider.dart';
-import '../../providers/hostel_provider.dart';
+import 'package:pgbee/providers/hostel_provider.dart';
+import 'package:pgbee/services/local_storage_service.dart';
 
 
 class HomePage extends StatelessWidget {
@@ -259,12 +260,29 @@ class _OwnerUpdateSectionState extends State<OwnerUpdateSection> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadHostelData();
+      _loadPersistentCounter();
     });
   }
 
   void _loadHostelData() {
     final hostelProvider = Provider.of<HostelProvider>(context, listen: false);
-    hostelProvider.loadHostelDetails('owner_1'); // Replace with actual owner ID
+    // Only load if we don't have data yet - prevent resetting saved data
+    if (hostelProvider.hostel == null) {
+      hostelProvider.loadHostelDetails('owner_1'); // Replace with actual owner ID
+    }
+  }
+
+  Future<void> _loadPersistentCounter() async {
+    try {
+      final persistentCount = await LocalStorageService.getAdmittedStudentsCount();
+      if (mounted) {
+        setState(() {
+          _studentCount = persistentCount;
+        });
+      }
+    } catch (e) {
+      print('Error loading persistent counter: $e');
+    }
   }
 
   void _decrement() {
@@ -287,17 +305,37 @@ class _OwnerUpdateSectionState extends State<OwnerUpdateSection> {
       _message = null;
     });
 
-    final hostelProvider = Provider.of<HostelProvider>(context, listen: false);
-    final success = await hostelProvider.updateAdmittedStudents(_studentCount);
-    
-    setState(() {
-      _isLoading = false;
-      if (success) {
-        _message = 'Updated successfully to $_studentCount students!';
-      } else {
-        _message = 'Failed to update student count';
+    try {
+      final hostelProvider = Provider.of<HostelProvider>(context, listen: false);
+      
+      // Try backend update first
+      bool backendSuccess = false;
+      try {
+        await hostelProvider.updateAdmittedStudents(_studentCount);
+        backendSuccess = true;
+      } catch (e) {
+        print('Backend update failed: $e');
       }
-    });
+      
+      // Always update local storage for persistence
+      await LocalStorageService.setAdmittedStudentsCount(_studentCount);
+      
+      setState(() {
+        _isLoading = false;
+        _message = backendSuccess 
+            ? 'Updated successfully to $_studentCount students!'
+            : 'Updated locally to $_studentCount students (backend unavailable)';
+      });
+      
+      if (!backendSuccess) {
+        await LocalStorageService.setFallbackMode(true);
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _message = 'Failed to update student count';
+      });
+    }
   }
 
   @override

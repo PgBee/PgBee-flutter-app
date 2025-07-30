@@ -20,27 +20,64 @@ class AuthService {
     'existing@test.com': 'password123',
   };
 
-  // Sign In
+  // Sign In - Updated to match backend documentation
   Future<Map<String, dynamic>> signIn(String email, String password) async {
     try {
       final response = await _dio.post('/auth/login', data: {
         'email': email,
         'password': password,
       });
+      
+      if (response.statusCode == 200) {
+        final data = response.data;
+        return {
+          'success': true,
+          'data': data,
+          'accessToken': data['accessToken'],
+          'refreshToken': data['refreshToken'],
+          'message': data['message'] ?? 'Login successful',
+          'user': data['user'], // Include user data if available
+        };
+      }
+      
       return {
-        'success': response.statusCode == 200,
-        'data': response.data, // Assuming the backend returns a token or user data
+        'success': false,
+        'error': 'Login failed',
       };
     } catch (e) {
       print('Auth Service Error - Sign In: $e');
+      
+      if (e is DioException) {
+        if (e.response?.statusCode == 401) {
+          return {
+            'success': false,
+            'error': 'Invalid email or password',
+          };
+        } else if (e.response?.statusCode == 404) {
+          return {
+            'success': false,
+            'error': 'User not found',
+          };
+        }
+      }
+      
       // For testing purposes, check against stored credentials
       if (_userCredentials.containsKey(email) && _userCredentials[email] == password) {
         return {
           'success': true,
-          'data': {'access_token': 'test_token', 'refresh_token': 'test_refresh'}
+          'data': {
+            'accessToken': 'test_token_${DateTime.now().millisecondsSinceEpoch}',
+            'refreshToken': 'test_refresh_${DateTime.now().millisecondsSinceEpoch}',
+            'user': {
+              'id': 'test_user_id',
+              'email': email,
+              'name': 'Test User',
+              'role': 'owner'
+            }
+          }
         };
       }
-      // Return proper error for invalid credentials
+      
       return {
         'success': false,
         'error': 'Invalid email or password',
@@ -48,13 +85,31 @@ class AuthService {
     }
   }
 
-  // Sign Up
+  // Sign Up - Updated to match backend documentation
   Future<Map<String, dynamic>> signUp(AuthModel user) async {
     try {
-      final response = await _dio.post('/auth/register', data: user.toJson());
+      final response = await _dio.post('/auth/signup', data: {
+        'name': '${user.firstName ?? ''} ${user.lastName ?? ''}'.trim(),
+        'email': user.email,
+        'password': user.password,
+        'role': user.role ?? 'student', // Use role from AuthModel
+      });
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        return {
+          'success': true,
+          'data': data,
+          'accessToken': data['accessToken'],
+          'refreshToken': data['refreshToken'],
+          'message': data['message'] ?? 'User created successfully',
+          'user': data['user'], // Include user data if available
+        };
+      }
+      
       return {
-        'success': response.statusCode == 200 || response.statusCode == 201,
-        'data': response.data, // Assuming the backend returns user data or token
+        'success': false,
+        'error': 'Registration failed',
       };
     } catch (e) {
       print('Auth Service Error - Sign Up: $e');
@@ -84,7 +139,16 @@ class AuthService {
         _userCredentials[user.email] = user.password;
         return {
           'success': true,
-          'data': {'access_token': 'test_token', 'refresh_token': 'test_refresh'}
+          'data': {
+            'accessToken': 'test_token_${DateTime.now().millisecondsSinceEpoch}',
+            'refreshToken': 'test_refresh_${DateTime.now().millisecondsSinceEpoch}',
+            'user': {
+              'id': 'test_user_id',
+              'email': user.email,
+              'name': '${user.firstName ?? ''} ${user.lastName ?? ''}'.trim(),
+              'role': user.role ?? 'student'
+            }
+          }
         };
       }
       
@@ -151,10 +215,14 @@ class AuthService {
         });
 
         if (response.statusCode == 200 || response.statusCode == 201) {
+          final data = response.data;
           return {
             'success': true,
-            'data': response.data,
-            'user': userData,
+            'data': data,
+            'accessToken': data['accessToken'],
+            'refreshToken': data['refreshToken'],
+            'message': data['message'] ?? 'Google Sign-In successful',
+            'user': data['user'] ?? userData,
           };
         } else {
           throw Exception('Backend authentication failed');
@@ -166,8 +234,8 @@ class AuthService {
         return {
           'success': true,
           'data': {
-            'access_token': userData['accessToken'],
-            'refresh_token': 'google_refresh_token_${DateTime.now().millisecondsSinceEpoch}',
+            'accessToken': 'google_access_token_${DateTime.now().millisecondsSinceEpoch}',
+            'refreshToken': 'google_refresh_token_${DateTime.now().millisecondsSinceEpoch}',
             'user': userData,
           },
         };
@@ -205,7 +273,7 @@ class AuthService {
     }
   }
 
-  // Google Sign-In Callback (handled after redirection)
+    // Google Sign-In Callback (handled after redirection)
   Future<Map<String, dynamic>> googleCallback(String code) async {
     try {
       final response = await _dio.get('/auth/google/callback', queryParameters: {
@@ -216,9 +284,10 @@ class AuthService {
         'data': response.data, // Expect token or user data
       };
     } catch (e) {
+      print('Google Callback Error: $e');
       return {
         'success': false,
-        'error': e.toString(),
+        'error': 'Google callback failed',
       };
     }
   }
@@ -229,14 +298,27 @@ class AuthService {
       final response = await _dio.post('/auth/token/refresh', data: {
         'refresh_token': refreshToken,
       });
-      return {
-        'success': response.statusCode == 200,
-        'data': response.data, // Expect new access token
-      };
-    } catch (e) {
+      
+      if (response.statusCode == 200) {
+        final data = response.data;
+        return {
+          'success': true,
+          'data': data,
+          'accessToken': data['accessToken'],
+          'refreshToken': data['refreshToken'],
+          'message': 'Token refreshed successfully',
+        };
+      }
+      
       return {
         'success': false,
-        'error': e.toString(),
+        'error': 'Token refresh failed',
+      };
+    } catch (e) {
+      print('Refresh Token Error: $e');
+      return {
+        'success': false,
+        'error': 'Token refresh failed',
       };
     }
   }
@@ -244,20 +326,20 @@ class AuthService {
   // Test Route (Requires Authorization)
   Future<Map<String, dynamic>> testRoute(String accessToken) async {
     try {
-      final response = await _dio.get(
-        '/auth/test',
-        options: Options(headers: {
-          'Authorization': 'Bearer $accessToken',
-        }),
-      );
+      final response = await _dio.get('/auth/test', options: Options(
+        headers: {'Authorization': 'Bearer $accessToken'},
+      ));
+      
       return {
         'success': response.statusCode == 200,
         'data': response.data,
+        'message': 'Test route successful',
       };
     } catch (e) {
+      print('Test Route Error: $e');
       return {
         'success': false,
-        'error': e.toString(),
+        'error': 'Test route failed',
       };
     }
   }

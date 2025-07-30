@@ -5,19 +5,23 @@ import 'package:pgbee/providers/auth_provider.dart';
 import 'package:pgbee/providers/screens_provider.dart';
 import 'package:pgbee/providers/hostel_provider.dart';
 import 'package:pgbee/providers/enquiry_provider.dart';
-//import 'package:pgbee/views/screens/landing_page.dart';
-//import 'package:pgbee/views/screens/root_layout.dart';
-
+import 'package:pgbee/core/widgets/app_initializer.dart';
+import 'package:pgbee/services/local_storage_service.dart';
 
 import 'package:provider/provider.dart';
-import 'package:pgbee/config/locator.dart';
 
-void main() {
-  setupLocator();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize local storage (Hive) for fallback functionality
+  await LocalStorageService.init();
+  // Don't initialize mock data here - let it be initialized only when needed
+  // to preserve user's saved data
+  
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => locator<AuthProvider>()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ScreensProvider()),
         ChangeNotifierProvider(create: (_) => HostelProvider()),
         ChangeNotifierProvider(create: (_) => EnquiryProvider()),
@@ -38,8 +42,8 @@ class PgBee extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'PgBee',
       theme: AppTheme.appTheme,
-      // Set the initial screen to AuthScreen
+      // Use AppInitializer to handle session restoration and initial navigation
+      home: const AppInitializer(),
     );
   }
 }
-

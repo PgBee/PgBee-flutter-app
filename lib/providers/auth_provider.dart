@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:pgbee/controllers/auth_controller.dart';
 import 'package:pgbee/models/auth_model.dart';
+import 'package:pgbee/services/service_manager.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final AuthController _controller;
-  AuthProvider(this._controller);
+  final ServiceManager _serviceManager = ServiceManager();
 
   bool _isSignUp = false;
   bool get isSignUp => _isSignUp;
@@ -30,74 +29,159 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isLoggedIn = false;
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  bool get isLoggedIn => _serviceManager.isAuthenticated;
   String? errorMessage;
+  Map<String, dynamic>? get currentUser => _serviceManager.currentUser;
 
-  Future<bool> signIn(String email, String password) async {
-    try {
-      final result = await _controller.login(email, password);
-      isLoggedIn = result;
-      if (result) {
-        errorMessage = null;
-      } else {
-        errorMessage = "Invalid email or password. Please check your credentials.";
-      }
-      notifyListeners();
-      return result;
-    } catch (e) {
-      errorMessage = "Login failed. Please try again.";
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<bool> signUp(String first, String last, String email, String pass) async {
-    if (!_agreeToTerms) {
-      errorMessage = "Please agree to the terms and conditions";
-      notifyListeners();
-      return false;
-    }
+  // Initialize session on app startup
+  Future<bool> initializeSession() async {
+    _isLoading = true;
+    errorMessage = null;
+    notifyListeners();
     
     try {
-      final user = AuthModel(
-        email: email,
-        password: pass,
-        firstName: first,
-        lastName: last,
-        role: "user", // Adjust based on backend requirements
-      );
-      final result = await _controller.register(user);
-      if (result) {
-        isLoggedIn = true;
-        errorMessage = null;
-      } else {
-        errorMessage = "Registration failed. Email might already be registered.";
-      }
+      final sessionRestored = await _serviceManager.initializeSession();
+      _isLoading = false;
       notifyListeners();
-      return result;
+      return sessionRestored;
     } catch (e) {
-      errorMessage = "Registration failed. Please try again.";
+      print('Session initialization error: $e');
+      _isLoading = false;
       notifyListeners();
       return false;
     }
   }
-  Future<bool> googleSignIn() async {
+
+  Future<bool> signIn(String email, String password) async {
+    _isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
     try {
-      // Call the backend Google Sign-In endpoint
-      final result = await _controller.googleSignIn();
-      if (result) {
-        isLoggedIn = true;
+      final result = await _serviceManager.login(email, password);
+      
+      if (result['success'] == true) {
         errorMessage = null;
+        _isLoading = false;
         notifyListeners();
         return true;
+      } else {
+        errorMessage = result['error'] ?? "Invalid email or password. Please check your credentials.";
+        _isLoading = false;
+        notifyListeners();
+        return false;
       }
-      errorMessage = "Failed to authenticate with Google";
-      notifyListeners();
-      return false;
     } catch (e) {
-      errorMessage = "Google Sign-In error: ${e.toString()}";
+      errorMessage = "Login failed. Please try again.";
+      _isLoading = false;
       notifyListeners();
       return false;
     }
+  }
+
+  Future<bool> signUp(AuthModel user) async {
+    _isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      if (!_agreeToTerms) {
+        errorMessage = "Please agree to the terms and conditions";
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      final result = await _serviceManager.register(user);
+      
+      if (result['success'] == true) {
+        errorMessage = null;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        errorMessage = result['error'] ?? "Registration failed. Email might already be registered.";
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      errorMessage = "Registration failed. Please try again.";
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> googleSignIn() async {
+    _isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await _serviceManager.loginWithGoogle();
+      
+      if (result['success'] == true) {
+        errorMessage = null;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        errorMessage = result['error'] ?? "Failed to authenticate with Google";
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      errorMessage = "Google Sign-In error: ${e.toString()}";
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> signOut() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _serviceManager.logout();
+      errorMessage = null;
+      print('User signed out successfully');
+    } catch (e) {
+      errorMessage = "Sign out failed";
+      print('Sign out error: $e');
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // Get user role
+  String? getUserRole() {
+    return _serviceManager.getUserRole();
+  }
+
+  // Check if user is owner
+  bool isOwner() {
+    return _serviceManager.isOwner();
+  }
+
+  // Check if user is student
+  bool isStudent() {
+    return _serviceManager.isStudent();
+  }
+
+  // Get user name
+  String? getUserName() {
+    return _serviceManager.getUserName();
+  }
+
+  // Get user email
+  String? getUserEmail() {
+    return _serviceManager.getUserEmail();
   }
 }

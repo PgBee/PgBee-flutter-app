@@ -4,6 +4,7 @@ import '../../core/constants/colors.dart';
 import '../../providers/enquiry_provider.dart';
 import '../../providers/hostel_provider.dart';
 import '../../models/enquiry_model.dart';
+import '../../services/local_storage_service.dart';
 
 class InboxScreen extends StatefulWidget {
   const InboxScreen({super.key});
@@ -24,9 +25,32 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
     });
   }
 
-  void _loadEnquiries() {
+  void _loadEnquiries() async {
     final enquiryProvider = Provider.of<EnquiryProvider>(context, listen: false);
-    enquiryProvider.loadEnquiries('owner_1'); // Replace with actual owner ID
+    
+    try {
+      // Load enquiries with local storage sync
+      await enquiryProvider.loadEnquiries('owner_1'); // Replace with actual owner ID
+      
+      // Check if we're in fallback mode
+      final isFallbackMode = await LocalStorageService.isFallbackMode();
+      if (isFallbackMode || enquiryProvider.errorMessage != null) {
+        print('Using local storage mode for enquiries');
+        await LocalStorageService.setFallbackMode(true);
+        
+        // Initialize mock data if no local data exists
+        final localEnquiries = await LocalStorageService.getEnquiries();
+        if (localEnquiries.isEmpty) {
+          await LocalStorageService.initMockData();
+          // Reload from local storage after initializing mock data
+          await enquiryProvider.loadFromLocalStorage();
+        }
+      }
+    } catch (e) {
+      print('Error loading enquiries: $e');
+      await LocalStorageService.setFallbackMode(true);
+      await enquiryProvider.loadFromLocalStorage();
+    }
   }
 
   @override
@@ -376,22 +400,55 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
     );
 
     if (confirmed == true) {
-      final success = await enquiryProvider.acceptEnquiry(enquiry.id);
-      
-      if (success) {
-        // Increment admitted students count
-        await hostelProvider.incrementAdmittedStudents();
+      try {
+        // Accept enquiry (this now handles local storage persistence automatically)
+        final enquirySuccess = await enquiryProvider.acceptEnquiry(enquiry.id);
         
+        if (enquirySuccess) {
+          // Try to update counter
+          bool counterSuccess = false;
+          
+          try {
+            // Try backend counter update first
+            counterSuccess = await hostelProvider.updateAdmittedStudents(1);
+            
+            if (!counterSuccess) {
+              // Backend failed, use local storage for persistent counter
+              print('Backend counter update failed, using local storage');
+              await LocalStorageService.incrementAdmittedStudents();
+              counterSuccess = true;
+            } else {
+              // Sync with local storage for persistence
+              await LocalStorageService.incrementAdmittedStudents();
+            }
+          } catch (e) {
+            print('Counter update error: $e');
+            // Fallback to local storage
+            await LocalStorageService.incrementAdmittedStudents();
+            counterSuccess = true;
+          }
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(counterSuccess 
+                ? 'Enquiry accepted! Student count updated.'
+                : 'Enquiry accepted but failed to update student count.'),
+              backgroundColor: counterSuccess ? Colors.green : Colors.orange,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to accept enquiry'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        print('Error in accept enquiry: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Enquiry accepted! Student count updated.'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(enquiryProvider.errorMessage ?? 'Failed to accept enquiry'),
+            content: Text('An error occurred while accepting the enquiry'),
             backgroundColor: Colors.red,
           ),
         );
@@ -423,19 +480,21 @@ class _InboxScreenState extends State<InboxScreen> with SingleTickerProviderStat
     );
 
     if (confirmed == true) {
-      final success = await enquiryProvider.denyEnquiry(enquiry.id);
-      
-      if (success) {
+      try {
+        // Deny enquiry (this now handles local storage persistence automatically)
+        final success = await enquiryProvider.denyEnquiry(enquiry.id);
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Enquiry denied.'),
-            backgroundColor: Colors.orange,
+            content: Text(success ? 'Enquiry denied.' : 'Failed to deny enquiry'),
+            backgroundColor: success ? Colors.orange : Colors.red,
           ),
         );
-      } else {
+      } catch (e) {
+        print('Error denying enquiry: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(enquiryProvider.errorMessage ?? 'Failed to deny enquiry'),
+            content: Text('An error occurred while denying the enquiry'),
             backgroundColor: Colors.red,
           ),
         );
