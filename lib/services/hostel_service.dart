@@ -191,8 +191,16 @@ class HostelService {
         
         // Handle different response formats from the backend
         if (data is Map<String, dynamic>) {
+          // Backend uses "ok" field instead of "success" 
+          if (data.containsKey('ok') && data.containsKey('data')) {
+            return {
+              'success': data['ok'] ?? true,
+              'data': data['data'],
+              'message': data['message'],
+            };
+          }
           // If the response has a success field and data field, use that structure
-          if (data.containsKey('success') && data.containsKey('data')) {
+          else if (data.containsKey('success') && data.containsKey('data')) {
             return {
               'success': data['success'] ?? true,
               'data': data['data'],
@@ -304,7 +312,7 @@ class HostelService {
   // Update hostel details - PUT /api/v1/hostel/:id
   Future<Map<String, dynamic>> updateHostel(HostelModel hostel) async {
     try {
-      final response = await HttpInterceptor.put('/hostel/${hostel.id}', body: {
+      final response = await HttpInterceptor.post('/hostel', body: {
         'hostelName': hostel.hostelName,
         'phone': hostel.phone,
         'address': hostel.address,

@@ -40,14 +40,56 @@ class HostelModel {
   });
 
   factory HostelModel.fromJson(Map<String, dynamic> json) {
-    return HostelModel(
+    print('HostelModel.fromJson: Input JSON keys: ${json.keys.toList()}');
+    print('HostelModel.fromJson: hostelName = ${json['hostelName']}');
+    print('HostelModel.fromJson: phone = ${json['phone']}');
+    print('HostelModel.fromJson: address = ${json['address']}');
+    print('HostelModel.fromJson: Stack trace: ${StackTrace.current}');
+    
+    // Extract owner name from User object or fallback to other fields
+    String ownerName = '';
+    if (json['User'] != null && json['User']['name'] != null) {
+      ownerName = json['User']['name'];
+    } else if (json['Owner'] != null && json['Owner']['name'] != null) {
+      ownerName = json['Owner']['name'];
+    } else {
+      ownerName = json['name'] ?? json['ownerName'] ?? 'Owner';
+    }
+
+    // Convert Ammenity object to AmenityModel list
+    List<AmenityModel> amenities = <AmenityModel>[];
+    if (json['Ammenity'] != null) {
+      final amenityData = json['Ammenity'] as Map<String, dynamic>;
+      // Convert boolean flags to AmenityModel objects
+      amenityData.forEach((key, value) {
+        if (key != 'id' && value is bool) {
+          amenities.add(AmenityModel(
+            id: key,
+            name: key.toLowerCase() == 'mess' ? 'Food' : 
+                  key.toLowerCase() == 'ac' ? 'Air Conditioning' :
+                  key.toLowerCase() == 'wifi' ? 'WiFi' :
+                  key.toLowerCase() == 'firstaid' ? 'First Aid' :
+                  key.toLowerCase() == 'currentbill' ? 'Current Bill' :
+                  key.toLowerCase() == 'waterbill' ? 'Water Bill' :
+                  key[0].toUpperCase() + key.substring(1),
+            description: '${key[0].toUpperCase() + key.substring(1)} facility',
+            isAvailable: value,
+          ));
+        }
+      });
+    } else if (json['amenities'] != null) {
+      // Fallback to existing amenities structure
+      amenities = (json['amenities'] as List).map((a) => AmenityModel.fromJson(a)).toList();
+    }
+
+    final hostelModel = HostelModel(
       id: json['id'] ?? '',
       hostelName: json['hostelName'] ?? '',
-      ownerName: json['name'] ?? json['ownerName'] ?? '',
+      ownerName: ownerName,
       phone: json['phone'] ?? '',
       address: json['address'] ?? '',
       location: json['location'] ?? '',
-      description: json['description'] ?? '',
+      description: json['description'] ?? 'A comfortable place to stay',
       rent: (json['rent'] ?? 0.0).toDouble(),
       distance: (json['distance'] ?? 0.0).toDouble(),
       bedrooms: json['bedrooms'] ?? 1,
@@ -55,13 +97,17 @@ class HostelModel {
       curfew: json['curfew'] ?? false,
       gender: json['gender'] ?? 'mixed',
       files: json['files'] ?? '',
-      amenities: json['amenities'] != null 
-          ? (json['amenities'] as List).map((a) => AmenityModel.fromJson(a)).toList()
-          : <AmenityModel>[],
+      amenities: amenities,
       admittedStudents: json['admittedStudents'] ?? 0,
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
     );
+    
+    print('HostelModel.fromJson: Created model with hostelName: ${hostelModel.hostelName}');
+    print('HostelModel.fromJson: Created model with phone: ${hostelModel.phone}');
+    print('HostelModel.fromJson: Created model with address: ${hostelModel.address}');
+    
+    return hostelModel;
   }
 
   Map<String, dynamic> toJson() {

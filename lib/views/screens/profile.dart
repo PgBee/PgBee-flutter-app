@@ -26,56 +26,64 @@ class _SecuritySettingsPageState extends State<SecuritySettingsPage> {
                 
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade400, width: 1),
-                    ),
-                    padding: EdgeInsets.symmetric(vertical: 22),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            color: Colors.black87,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Center(
-                            child: Text(
-                              "S",
+                  child: Consumer<AuthProvider>(
+                    builder: (context, authProvider, child) {
+                      final currentUser = authProvider.currentUser;
+                      final userName = currentUser?['name'] ?? currentUser?['email']?.split('@')[0] ?? 'User';
+                      final userInitial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
+                      
+                      return Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade400, width: 1),
+                        ),
+                        padding: EdgeInsets.symmetric(vertical: 22),
+                        child: Column(
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: Colors.black87,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  userInitial,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 38,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Roboto',
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              userName,
                               style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 38,
                                 fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                                color: Colors.black87,
                                 fontFamily: 'Roboto',
                               ),
                             ),
-                          ),
+                            SizedBox(height: 4),
+                            Text(
+                              "Owner",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                                fontFamily: 'Roboto',
+                              ),
+                            ),
+                          ],
                         ),
-                        SizedBox(height: 16),
-                        Text(
-                          "Shravan Pandala",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                            color: Colors.black87,
-                            fontFamily: 'Roboto',
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          "Owner",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                            fontFamily: 'Roboto',
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ),
                 SizedBox(height: 24),

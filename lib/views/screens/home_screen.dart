@@ -11,27 +11,49 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallPhone = screenWidth < 360;
+    final isTablet = screenWidth >= 600;
+    final isDesktop = screenWidth >= 900;
+    
+    // Dynamic padding based on screen size
+    final horizontalPadding = isDesktop ? 32.0 : 
+                             isTablet ? 28.0 : 
+                             isSmallPhone ? 16.0 : 24.0;
+    
+    final verticalSpacing = isDesktop ? 40.0 : 
+                           isTablet ? 36.0 : 
+                           isSmallPhone ? 20.0 : 32.0;
+    
     return Scaffold(
       body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 24),
-              // Owner update feature
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+              SizedBox(height: isDesktop ? 32 : isTablet ? 28 : 24),
+              // Owner update feature with responsive wrapper
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isDesktop ? 800 : double.infinity,
+                ),
                 child: OwnerUpdateSection(),
               ),
-              const SizedBox(height: 32),
-              // Student Feedback Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+              SizedBox(height: verticalSpacing),
+              // Student Feedback Section with responsive wrapper
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isDesktop ? 800 : double.infinity,
+                ),
                 child: StudentFeedbackSection(),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: isDesktop ? 32 : isTablet ? 28 : 24),
             ],
           ),
         ),
+      ),
     );
   }
 }

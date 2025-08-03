@@ -276,75 +276,28 @@ class AuthService {
         print('RefreshToken field at root: ${data.containsKey('refreshToken') ? 'found' : 'missing'}');
         print('RefreshToken field in data: ${data['data'] is Map && data['data'].containsKey('refreshToken') ? 'found' : 'missing'}');
         
-        // First try to extract tokens from cookies (they have longer expiration)
+        // Extract tokens from response body - follow the same pattern as simple_role_test.dart
         String? accessToken;
         String? refreshToken;
-        String? responseBodyAccessToken;
         
-        final setCookieHeader = response.headers['set-cookie'];
-        if (setCookieHeader != null) {
-          print('Set-Cookie header found: $setCookieHeader');
-          
-          // Try common cookie names for JWT tokens (prioritize cookies for longer expiration)
-          accessToken = _extractTokenFromCookies(setCookieHeader, 'jwt'); // Most common
-          accessToken = accessToken ?? _extractTokenFromCookies(setCookieHeader, 'accessToken');
-          accessToken = accessToken ?? _extractTokenFromCookies(setCookieHeader, 'access_token');
-          accessToken = accessToken ?? _extractTokenFromCookies(setCookieHeader, 'token');
-          
-          refreshToken = _extractTokenFromCookies(setCookieHeader, 'refreshToken');
-          refreshToken = refreshToken ?? _extractTokenFromCookies(setCookieHeader, 'refresh_token');
-          refreshToken = refreshToken ?? _extractTokenFromCookies(setCookieHeader, 'refresh');
-          
-          print('Extracted from cookies - accessToken: ${accessToken != null ? 'found' : 'not found'}');
-          print('Extracted from cookies - refreshToken: ${refreshToken != null ? 'found' : 'not found'}');
+        final loginData = data;
+        accessToken = loginData['data']?['accessToken'] ?? loginData['accessToken'];
+        
+        print('Direct token extraction (like test script):');
+        print('  - loginData keys: ${loginData.keys}');
+        if (loginData['data'] != null) {
+          print('  - loginData[data] keys: ${(loginData['data'] as Map).keys}');
         }
+        print('  - accessToken found: ${accessToken != null ? 'YES (${accessToken.length} chars)' : 'NO'}');
         
-        // Extract tokens from response body for comparison
-        responseBodyAccessToken = ((data['accessToken'] is String) ? data['accessToken'] :
-                         (data['access_token'] is String) ? data['access_token'] :
-                         (data['data'] is Map && data['data']['accessToken'] is String) ? data['data']['accessToken'] :
-                         (data['data'] is Map && data['data']['access_token'] is String) ? data['data']['access_token'] :
-                         (data['token'] is String) ? data['token'] :
-                         (data['access'] is String) ? data['access'] : null);
+        // For refresh token, try common patterns but don't require it
+        refreshToken = loginData['data']?['refreshToken'] ?? 
+                      loginData['refreshToken'] ?? 
+                      accessToken; // Use access token as refresh if no dedicated refresh token
         
-        // If we have both cookie and response body tokens, compare their expiration
-        if (accessToken != null && responseBodyAccessToken != null && 
-            _isValidJWT(accessToken) && _isValidJWT(responseBodyAccessToken)) {
-          try {
-            final cookieTokenExp = JwtDecoder.decode(accessToken)['exp'] as int;
-            final bodyTokenExp = JwtDecoder.decode(responseBodyAccessToken)['exp'] as int;
-            
-            print('Cookie token expires at: $cookieTokenExp');
-            print('Response body token expires at: $bodyTokenExp');
-            
-            // Use the token with longer expiration
-            if (bodyTokenExp > cookieTokenExp) {
-              print('Using response body token (longer expiration)');
-              accessToken = responseBodyAccessToken;
-            } else {
-              print('Using cookie token (longer expiration)');
-            }
-          } catch (e) {
-            print('Error comparing token expiration, using cookie token: $e');
-          }
-        }
+        print('  - refreshToken found: ${refreshToken != null ? 'YES (${refreshToken.length} chars)' : 'NO'}');
         
-        // If tokens not in cookies, fall back to response body
-        if (accessToken == null || refreshToken == null) {
-          print('Tokens not found in cookies, checking response body...');
-          
-          accessToken = accessToken ?? responseBodyAccessToken;
-                           
-          refreshToken = refreshToken ?? ((data['refreshToken'] is String) ? data['refreshToken'] :
-                            (data['refresh_token'] is String) ? data['refresh_token'] :
-                            (data['data'] is Map && data['data']['refreshToken'] is String) ? data['data']['refreshToken'] :
-                            (data['data'] is Map && data['data']['refresh_token'] is String) ? data['data']['refresh_token'] :
-                            (data['refresh'] is String) ? data['refresh'] : null);
-          
-          print('Extracted from response body - accessToken: ${accessToken != null ? 'found' : 'not found'}');
-          print('Extracted from response body - refreshToken: ${refreshToken != null ? 'found' : 'not found'}');
-        }
-                            
+        // Extract user data
         final userData = (data['user'] is Map) ? Map<String, dynamic>.from(data['user']) :
                         (data['userData'] is Map) ? Map<String, dynamic>.from(data['userData']) :
                         (data['profile'] is Map) ? Map<String, dynamic>.from(data['profile']) :
@@ -370,97 +323,25 @@ class AuthService {
         final finalUserData = userData ?? jwtUserData;
         final message = (data['message'] is String) ? data['message'] : 'Login successful';
         
-        print('Final extracted accessToken: ${accessToken != null ? 'not null (${accessToken.length} chars)' : 'null'}');
-        print('Final extracted refreshToken: ${refreshToken != null ? 'not null (${refreshToken.length} chars)' : 'null'}');
-        
-        // Special handling for this backend: if no refresh token in response body but we have cookies,
-        // use the cookie token as refresh token (it has longer expiration)
-        if (accessToken != null && refreshToken == null) {
-          final setCookieHeader = response.headers['set-cookie'];
-          if (setCookieHeader != null) {
-            final cookieToken = _extractTokenFromCookies(setCookieHeader, 'jwt');
-            if (cookieToken != null && cookieToken != accessToken && _isValidJWT(cookieToken)) {
-              try {
-                final accessTokenExp = JwtDecoder.decode(accessToken)['exp'] as int;
-                final cookieTokenExp = JwtDecoder.decode(cookieToken)['exp'] as int;
-                
-                // If cookie token has longer expiration, use it as refresh token
-                if (cookieTokenExp > accessTokenExp) {
-                  refreshToken = cookieToken;
-                  print('Using cookie token as refresh token (longer expiration: $cookieTokenExp vs $accessTokenExp)');
-                }
-              } catch (e) {
-                print('Error comparing token expirations: $e');
-              }
-            }
-          }
-          
-          // If still no refresh token, this backend doesn't support refresh tokens
-          if (refreshToken == null) {
-            print('Backend does not provide refresh token - using cookie-based authentication');
-            // Use cookie-based session instead of trying to duplicate access token
-            if (data.containsKey('ok') && data['ok'] == true) {
-              await saveTokens('cookie-session-active', 'cookie-session-active', finalUserData);
-              return {
-                'success': true,
-                'data': data,
-                'accessToken': 'cookie-session-active',
-                'refreshToken': 'cookie-session-active',
-                'message': message,
-                'user': finalUserData ?? {},
-                'authType': 'cookie',
-              };
-            }
-          }
-        }
-        
-        if (accessToken != null && refreshToken != null) {
-          // Validate JWT format before saving
-          if (_isValidJWT(accessToken) && _isValidJWT(refreshToken)) {
-            await saveTokens(accessToken, refreshToken, finalUserData);
-            print('Login successful, tokens saved');
-            
-            return {
-              'success': true,
-              'data': data,
-              'accessToken': accessToken,
-              'refreshToken': refreshToken,
-              'message': message,
-              'user': finalUserData ?? {},
-            };
-          } else {
-            print('Warning: Received invalid JWT format from server');
-            return {
-              'success': false,
-              'error': 'Invalid token format received from server',
-            };
-          }
-        } else {
-          print('Warning: Missing access or refresh token in server response');
-          print('Available data fields: ${data.keys.join(', ')}');
-          print('Set-Cookie header: ${response.headers['set-cookie']}');
-          
-          // For cookie-only authentication, check if login was successful
-          // The tokens might be in HTTP-only cookies that we can't access directly
-          if (data.containsKey('success') && data['success'] == true) {
-            print('Login successful but tokens in HTTP-only cookies - using cookie-based session');
-            // Create a session indicator for cookie-based auth
-            await saveTokens('cookie-session-active', 'cookie-session-active', finalUserData);
-            
-            return {
-              'success': true,
-              'data': data,
-              'accessToken': 'cookie-session-active',
-              'refreshToken': 'cookie-session-active',
-              'message': message,
-              'user': finalUserData ?? {},
-              'authType': 'cookie', // Indicate this is cookie-based auth
-            };
-          }
+        // Save the tokens if we found them (like the test script approach)
+        if (accessToken != null && _isValidJWT(accessToken)) {
+          await saveTokens(accessToken, refreshToken ?? accessToken, finalUserData);
+          print('Login successful, JWT tokens saved');
           
           return {
+            'success': true,
+            'data': data,
+            'accessToken': accessToken,
+            'refreshToken': refreshToken ?? accessToken,
+            'message': message,
+            'user': finalUserData ?? {},
+          };
+        } else {
+          print('Warning: No valid JWT access token found in response');
+          print('Available data fields: ${data.keys.join(', ')}');
+          return {
             'success': false,
-            'error': 'Missing authentication tokens in server response',
+            'error': 'No valid access token received from server',
           };
         }
       } else {
@@ -587,7 +468,7 @@ class AuthService {
     }
   }
 
-  // Refresh Token - Improved
+  // Refresh Token - Fixed to not accept invalid cookie-session tokens
   Future<bool> refreshAccessToken() async {
     final refreshToken = await getRefreshToken();
     if (refreshToken == null || !_isValidJWT(refreshToken)) {
@@ -596,20 +477,19 @@ class AuthService {
       return false;
     }
     
-    // Don't attempt to refresh cookie-based sessions using refresh tokens
+    // Don't allow cookie-session-active to be treated as valid - force fresh login
     if (refreshToken == 'cookie-session-active') {
-      print('Cookie-based session - no token refresh needed, relying on cookies');
-      return true; // Cookie sessions are handled by server
+      print('Cookie-session-active detected - invalid token, forcing fresh login');
+      await clearTokens();
+      return false; // Force user to login again with real JWT
     }
     
     // Don't attempt refresh if refresh token is same as access token (invalid state)
     final currentAccessToken = await getAccessToken();
-    if (refreshToken == currentAccessToken) {
-      print('Refresh token same as access token - backend does not support refresh tokens, switching to cookie auth');
-      // Clear tokens and rely on cookie-based auth
+    if (refreshToken == currentAccessToken || currentAccessToken == 'cookie-session-active') {
+      print('Invalid token state - clearing tokens and forcing fresh login');
       await clearTokens();
-      await saveTokens('cookie-session-active', 'cookie-session-active', await getUserData());
-      return true;
+      return false; // Force fresh login
     }
     
     try {

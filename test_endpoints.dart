@@ -5,11 +5,11 @@ import 'package:http/http.dart' as http;
 Future<void> main() async {
   print('=== Testing Available Hostel Endpoints ===\n');
   
-  const baseUrl = 'https://server.pgbee.in';
+  const baseUrl = 'http://192.168.1.73:8080';
   
   // First login to get a token
   final loginResponse = await http.post(
-    Uri.parse('$baseUrl/auth/signin'),
+    Uri.parse('$baseUrl/auth/signup'),
     headers: {'Content-Type': 'application/json'},
     body: jsonEncode({
       'email': 'kasinathkv8@gmail.com',
@@ -17,7 +17,7 @@ Future<void> main() async {
     }),
   );
   
-  if (loginResponse.statusCode != 200) {
+  if (loginResponse.statusCode != 201) {
     print('Login failed: ${loginResponse.body}');
     return;
   }

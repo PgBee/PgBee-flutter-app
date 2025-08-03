@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:pgbee/core/constants/colors.dart';
-import 'package:pgbee/core/theme/app_theme.dart';
 import 'package:pgbee/core/utils/button_widgets.dart';
 import 'package:pgbee/providers/auth_provider.dart';
 import 'package:pgbee/views/widgets/auth_widgets.dart';
@@ -138,132 +137,155 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Better responsive breakpoints
+    final isSmallPhone = screenWidth < 360;
+    final isMobile = screenWidth < 600;
+    final isTablet = screenWidth >= 600 && screenWidth < 900;
+    final isDesktop = screenWidth >= 900;
+    
+    // Dynamic padding based on screen size
+    final horizontalPadding = isDesktop ? screenWidth * 0.15 : 
+                             isTablet ? screenWidth * 0.1 : 
+                             isSmallPhone ? 12.0 : 16.0;
+    
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Padding(
-            padding: AppTheme.screenPadding,
-            child: Column(
-              children: [
-                const SizedBox(height: 40),
-                
-                // Logo
-                Image.asset(
-                  'assets/images/logo.png',
-                  width: 300,
-                  height: 50,
-                ),
-                const SizedBox(height: 60),
-
-                // Main container
-                Container(
-                  width: double.maxFinite,
-                  padding: EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(
-                        width: 1,
-                        color: LightColor.grey
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: screenHeight - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: isMobile ? 16 : 24,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Dynamic top spacing
+                  SizedBox(height: isDesktop ? screenHeight * 0.08 : 
+                                   isTablet ? screenHeight * 0.06 : 
+                                   screenHeight * 0.04),
+                  
+                  // Logo - Enhanced responsive sizing with animation
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    constraints: BoxConstraints(
+                      maxWidth: isDesktop ? 500 : 
+                               isTablet ? 400 : 
+                               screenWidth * 0.8,
+                      maxHeight: isDesktop ? 100 : 
+                                isTablet ? 80 : 
+                                isSmallPhone ? 50 : 60,
+                    ),
+                    child: Hero(
+                      tag: 'app_logo',
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.contain,
                       ),
                     ),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(25),
-                      topRight: Radius.circular(25)
-                    )
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                  SizedBox(height: isDesktop ? screenHeight * 0.06 : 
+                                   isTablet ? screenHeight * 0.05 : 
+                                   screenHeight * 0.04),
 
-                      // Sign Up / Log In toggle buttons
-                      AuthWidgets.authChoice(),
-
-                      const SizedBox(height: 24),
-                      
-                      // // Google Sign In/Up button
-                      // AuthWidgets.googleAuth(context: context, authProvider: authProvider),
-                      // const SizedBox(height: 24),
-
-                      // OR divider
-                      AuthWidgets.divider(),
-                      const SizedBox(height: 24),
-
-                      // Form field of SignUp
-                      if (authProvider.isSignUp) Form(
-                        key: _signUpFormKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                          // First Name
-                          AuthWidgets.formField(
-                            validator: firstNameValidator,
-                            type: TextInputType.name,
-                            title: 'First name', 
-                            controller: _fNameController, 
-                            hintText: 'John'
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Last Name
-                          AuthWidgets.formField(
-                            validator: lastNameValidator,
-                            type: TextInputType.name,
-                            title: 'Last name', 
-                            controller: _lNameController, 
-                            hintText: 'Doe'
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Phone Number
-                          AuthWidgets.formField(
-                            validator: phoneValidator,
-                            type: TextInputType.phone,
-                            title: 'Phone Number',
-                            controller: _phoneController,
-                            hintText: 'Enter your phone number',
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Email
-                          AuthWidgets.formField(
-                            validator: validateEmail,
-                            title: 'Email', 
-                            controller: _emailController, 
-                            hintText: 'Enter your email address', 
-                            type: TextInputType.emailAddress
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Password
-                          AuthWidgets.passwordField(
-                            validator: passwordValidator,
-                            authProvider: authProvider,
-                            controller: _passwordController
-                          ),
-                          const SizedBox(height: 24),
-
-                            // Terms and conditions for sign up
-                            AuthWidgets.termsAndCondition(authProvider: authProvider),
-
-                            // Sign Up Submit Button
-                            const SizedBox(height: 40),
-                            ButtonWidgets.textButton(
-                              context: context,
-                              onPressed: onSubmitSignUp,
-                              height: 56, 
-                              width: double.maxFinite, 
-                              name: 'Sign Up'
-                            )
-                            
-                          ],
+                  // Main container - Enhanced responsive design
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 400),
+                    width: double.maxFinite,
+                    constraints: BoxConstraints(
+                      maxWidth: isDesktop ? 600 : 
+                               isTablet ? 500 : 
+                               double.infinity,
+                    ),
+                    padding: EdgeInsets.all(
+                      isDesktop ? 40 : 
+                      isTablet ? 32 : 
+                      isSmallPhone ? 16 : 24
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
+                          spreadRadius: 0,
                         ),
+                      ],
+                      border: Border(
+                        top: BorderSide(
+                          width: 2,
+                          color: LightColor.grey.withOpacity(0.3)
+                        ),
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(30),
+                        topRight: Radius.circular(30)
                       )
-                      // Form field of Sign In 
-                      else Form(
-                        key: _signInFormKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+
+                        // Sign Up / Log In toggle buttons
+                        AuthWidgets.authChoice(),
+
+                        SizedBox(height: isDesktop ? screenHeight * 0.04 : 
+                                        isTablet ? screenHeight * 0.035 : 
+                                        screenHeight * 0.03),
+                        
+                        // // Google Sign In/Up button
+                        // AuthWidgets.googleAuth(context: context, authProvider: authProvider),
+                        // const SizedBox(height: 24),
+
+                        // OR divider
+                        AuthWidgets.divider(),
+                        SizedBox(height: isDesktop ? screenHeight * 0.04 : 
+                                        isTablet ? screenHeight * 0.035 : 
+                                        screenHeight * 0.03),
+
+                        // Form field of SignUp
+                        if (authProvider.isSignUp) Form(
+                          key: _signUpFormKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                            // First Name
+                            AuthWidgets.formField(
+                              validator: firstNameValidator,
+                              type: TextInputType.name,
+                              title: 'First name', 
+                              controller: _fNameController, 
+                              hintText: 'John'
+                            ),
+                            SizedBox(height: isSmallPhone ? 16 : 20),
+
+                            // Last Name
+                            AuthWidgets.formField(
+                              validator: lastNameValidator,
+                              type: TextInputType.name,
+                              title: 'Last name', 
+                              controller: _lNameController, 
+                              hintText: 'Doe'
+                            ),
+                            SizedBox(height: isSmallPhone ? 16 : 20),
+
+                            // Phone Number
+                            AuthWidgets.formField(
+                              validator: phoneValidator,
+                              type: TextInputType.phone,
+                              title: 'Phone Number',
+                              controller: _phoneController,
+                              hintText: 'Enter your phone number',
+                            ),
+                            SizedBox(height: isSmallPhone ? 16 : 20),
 
                             // Email
                             AuthWidgets.formField(
@@ -273,7 +295,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               hintText: 'Enter your email address', 
                               type: TextInputType.emailAddress
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: isSmallPhone ? 16 : 20),
 
                             // Password
                             AuthWidgets.passwordField(
@@ -281,31 +303,83 @@ class _AuthScreenState extends State<AuthScreen> {
                               authProvider: authProvider,
                               controller: _passwordController
                             ),
-                            const SizedBox(height: 8),
+                            SizedBox(height: isDesktop ? 32 : 
+                                            isTablet ? 28 : 24),
 
-                            // Forget Password Widget
-                            AuthWidgets.forgetPassword(),
-                            const SizedBox(height: 24),
+                              // Terms and conditions for sign up
+                              AuthWidgets.termsAndCondition(authProvider: authProvider),
 
-                            // Captcha for login
-                            AuthWidgets.captacha(),
-
-                            // Submit Button of Log in
-                            const SizedBox(height: 40),
-                            ButtonWidgets.textButton(
-                              context: context,
-                              onPressed: onSubmitSignIn,
-                              height: 56, 
-                              width: double.maxFinite, 
-                              name: 'Login In'
-                            )
-                          ],
+                              // Sign Up Submit Button
+                              SizedBox(height: isDesktop ? 40 : 
+                                              isTablet ? 36 : 32),
+                              ButtonWidgets.textButton(
+                                context: context,
+                                onPressed: onSubmitSignUp,
+                                height: isDesktop ? 72 : 
+                                       isTablet ? 64 : 
+                                       isSmallPhone ? 52 : 56, 
+                                width: double.maxFinite, 
+                                name: 'Sign Up'
+                              )
+                              
+                            ],
+                          ),
                         )
-                      ),
-                    ],
+                        // Form field of Sign In 
+                        else Form(
+                          key: _signInFormKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+
+                              // Email
+                              AuthWidgets.formField(
+                                validator: validateEmail,
+                                title: 'Email', 
+                                controller: _emailController, 
+                                hintText: 'Enter your email address', 
+                                type: TextInputType.emailAddress
+                              ),
+                              SizedBox(height: isSmallPhone ? 16 : 20),
+
+                              // Password
+                              AuthWidgets.passwordField(
+                                validator: passwordValidator,
+                                authProvider: authProvider,
+                                controller: _passwordController
+                              ),
+                              SizedBox(height: 12),
+
+                              // Forget Password Widget
+                              AuthWidgets.forgetPassword(),
+                              SizedBox(height: isDesktop ? 32 : 
+                                              isTablet ? 28 : 24),
+
+                              // Captcha for login
+                              AuthWidgets.captacha(),
+
+                              // Submit Button of Log in
+                              SizedBox(height: isDesktop ? 40 : 
+                                              isTablet ? 36 : 32),
+                              ButtonWidgets.textButton(
+                                context: context,
+                                onPressed: onSubmitSignIn,
+                                height: isDesktop ? 72 : 
+                                       isTablet ? 64 : 
+                                       isSmallPhone ? 52 : 56, 
+                                width: double.maxFinite, 
+                                name: 'Log In'
+                              )
+                            ],
+                          )
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  SizedBox(height: isDesktop ? screenHeight * 0.08 : 
+                                   screenHeight * 0.05),
+                ],
+              ),
             ),
           ),
         ),

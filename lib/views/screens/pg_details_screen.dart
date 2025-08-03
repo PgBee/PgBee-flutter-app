@@ -73,44 +73,31 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
       // If refresh was successful and we have data, use it
       if (hostelProvider.hostel != null && hostelProvider.errorMessage == null) {
         print('Refresh successful, using backend data: ${hostelProvider.hostel!.hostelName}');
+        print('Backend hostel data - Phone: ${hostelProvider.hostel!.phone}, Address: ${hostelProvider.hostel!.address}');
         _populateFormFields(hostelProvider.hostel!);
         return;
       }
       
-      // If backend refresh failed or returned no hostels, fall back to local data
-      if (hostelProvider.errorMessage == null || hostelProvider.errorMessage!.contains('no hostels found')) {
-        // No hostels found is not an error - check for local data
-        print('No hostels found on backend, checking local storage...');
-      } else {
-        // Actual error occurred, fall back to local data
-        print('Backend error: ${hostelProvider.errorMessage}, falling back to local storage...');
+      // If no error message, it means "no hostels found" - this is handled by the UI properly
+      if (hostelProvider.errorMessage == null) {
+        print('No hostels found on backend - UI will show empty state with create button');
+        // Try to load any local data as fallback
+        final localHostels = await LocalStorageService.getHostels();
+        if (localHostels.isNotEmpty) {
+          print('Found local hostel data: ${localHostels.first.hostelName}');
+          _populateFormFields(localHostels.first);
+          hostelProvider.setHostelFromLocal(localHostels.first);
+        }
+        return;
       }
       
-      // Always prioritize local data first to preserve user changes
-      HostelModel? localHostel;
+      // If there's an actual error, fall back to local data
+      print('Backend error: ${hostelProvider.errorMessage}, falling back to local storage...');
       
-      // First try to get all hostels and find the one for this owner
+      // Try to load local data as fallback
       final localHostels = await LocalStorageService.getHostels();
       if (localHostels.isNotEmpty) {
-        localHostel = localHostels.first; // Use first hostel found
-        print('Found local hostel data: ${localHostel.hostelName}');
-      }
-      
-      // If no hostels found, try using different keys
-      if (localHostel == null) {
-        localHostel = await LocalStorageService.getHostel(ownerId);
-      }
-      
-      if (localHostel == null) {
-        localHostel = await LocalStorageService.getHostel('hostel_1');
-      }
-      
-      if (localHostel == null) {
-        localHostel = await LocalStorageService.getHostel('hostel_local_1');
-      }
-      
-      if (localHostel != null) {
-        // Use local data (this preserves all saved changes)
+        final localHostel = localHostels.first;
         print('Loading hostel data from local storage: ${localHostel.hostelName}');
         _populateFormFields(localHostel);
         
@@ -122,37 +109,10 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
           });
         }
         
-        // Update provider with local data only if it's empty
-        if (hostelProvider.hostel == null || hostelProvider.hostel!.hostelName == 'PG Bee Hostel') {
-          // Update provider state to match local storage
-          hostelProvider.setHostelFromLocal(localHostel);
-        }
+        // Update provider with local data
+        hostelProvider.setHostelFromLocal(localHostel);
       } else {
-        // No local data, try backend only if we don't have local data
-        print('No local data found, trying backend...');
-        
-        // Don't reload if we already have provider data (prevent resetting)
-        if (hostelProvider.hostel == null) {
-          await hostelProvider.loadHostelDetails(ownerId);
-          
-          if (hostelProvider.errorMessage != null) {
-            print('Backend failed, initializing with mock data');
-            await LocalStorageService.initMockData();
-            final mockHostels = await LocalStorageService.getHostels();
-            if (mockHostels.isNotEmpty) {
-              _populateFormFields(mockHostels.first);
-            }
-          } else {
-            // Save backend data to local storage for future use
-            if (hostelProvider.hostel != null) {
-              await LocalStorageService.saveHostel(hostelProvider.hostel!);
-              _populateFormFields(hostelProvider.hostel!);
-            }
-          }
-        } else {
-          // Use existing provider data
-          _populateFormFields(hostelProvider.hostel!);
-        }
+        print('No local data found either - UI will show empty state');
       }
     } catch (e) {
       print('Error loading hostel data: $e');
@@ -173,6 +133,9 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
   }
 
   void _populateFormFields(HostelModel hostel) {
+    print('PgDetailsScreen: _populateFormFields called with hostel: ${hostel.hostelName}');
+    print('PgDetailsScreen: Hostel details - Phone: ${hostel.phone}, Address: ${hostel.address}');
+    
     _hostelNameController.text = hostel.hostelName;
     _phoneController.text = hostel.phone;
     _addressController.text = hostel.address;
@@ -186,6 +149,8 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
     _gender = hostel.gender;
     _amenities = List.from(hostel.amenities);
     _fieldsPopulated = true;
+    
+    print('PgDetailsScreen: Form fields populated, hostel name controller now has: ${_hostelNameController.text}');
     setState(() {});
   }
 
@@ -288,6 +253,100 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed to update: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isSaving = false;
+      });
+    }
+  }
+
+  Future<void> _createNewHostel() async {
+    setState(() {
+      _isSaving = true;
+      _saveMessage = null;
+    });
+
+    try {
+      final hostelProvider = Provider.of<HostelProvider>(context, listen: false);
+      
+      // Create a default hostel model with valid required fields
+      final newHostel = HostelModel(
+        id: 'hostel_${DateTime.now().millisecondsSinceEpoch}',
+        hostelName: 'My New Hostel',
+        ownerName: 'Owner', // Will be updated from auth when backend is available
+        phone: '1234567890', // Provide default phone number
+        address: 'Enter your address', // Provide default address
+        location: 'Enter location', // Provide default location
+        description: 'A comfortable place to stay',
+        rent: 5000.0, // Provide default rent
+        distance: 1.0, // Provide default distance
+        bedrooms: 1,
+        bathrooms: 1,
+        curfew: true,
+        gender: 'Mixed',
+        files: '',
+        amenities: [],
+        admittedStudents: 0,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      bool backendSuccess = false;
+      try {
+        // Try to create hostel on backend via service manager
+        final serviceManager = ServiceManager();
+        final result = await serviceManager.hostelService.createHostel(newHostel);
+        if (result['success']) {
+          backendSuccess = true;
+          print('Hostel created successfully on backend');
+          
+          // Reload hostel data to get the server-created hostel
+          _loadHostelData();
+        } else {
+          print('Backend creation failed: ${result['error']}');
+        }
+      } catch (e) {
+        print('Backend creation failed: $e');
+      }
+
+      // If backend fails, save to local storage
+      if (!backendSuccess) {
+        await LocalStorageService.saveHostel(newHostel);
+        await LocalStorageService.setFallbackMode(true);
+        
+        // Update provider with local data
+        hostelProvider.setHostelFromLocal(newHostel);
+        _populateFormFields(newHostel);
+        
+        setState(() {
+          _isEditing = true; // Start in edit mode for new hostel
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hostel created locally. Please edit the details and save.'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hostel created successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _saveMessage = 'Failed to create hostel: ${e.toString()}';
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create hostel: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
@@ -454,6 +513,10 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 600;
+    final isDesktop = screenWidth >= 900;
+    
     return Scaffold(
       body: Consumer<HostelProvider>(
         builder: (context, hostelProvider, child) {
@@ -462,9 +525,22 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Loading hostel details...'),
+                  SizedBox(
+                    width: isDesktop ? 80 : isTablet ? 60 : 40,
+                    height: isDesktop ? 80 : isTablet ? 60 : 40,
+                    child: CircularProgressIndicator(
+                      strokeWidth: isDesktop ? 4 : 3,
+                    ),
+                  ),
+                  SizedBox(height: isDesktop ? 24 : 16),
+                  Text(
+                    'Loading hostel details...',
+                    style: TextStyle(
+                      fontSize: isDesktop ? 18 : isTablet ? 16 : 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                 ],
               ),
             );
@@ -472,49 +548,139 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
 
           if (hostelProvider.errorMessage != null) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error, color: Colors.red, size: 64),
-                  SizedBox(height: 16),
-                  Text(
-                    'Error: ${hostelProvider.errorMessage}',
-                    style: TextStyle(color: Colors.red, fontSize: 16),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadHostelData,
-                    child: Text('Retry'),
-                  ),
-                ],
+              child: Padding(
+                padding: EdgeInsets.all(isDesktop ? 32 : isTablet ? 24 : 16),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error, 
+                      color: Colors.red, 
+                      size: isDesktop ? 80 : isTablet ? 64 : 48
+                    ),
+                    SizedBox(height: isDesktop ? 24 : 16),
+                    Text(
+                      'Error: ${hostelProvider.errorMessage}',
+                      style: TextStyle(
+                        color: Colors.red, 
+                        fontSize: isDesktop ? 18 : isTablet ? 16 : 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Poppins',
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: isDesktop ? 24 : 16),
+                    ElevatedButton(
+                      onPressed: _loadHostelData,
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isDesktop ? 32 : isTablet ? 24 : 20,
+                          vertical: isDesktop ? 16 : isTablet ? 12 : 10,
+                        ),
+                      ),
+                      child: Text(
+                        'Retry',
+                        style: TextStyle(
+                          fontSize: isDesktop ? 16 : isTablet ? 15 : 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }
 
           if (hostelProvider.hostel == null) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.home_outlined, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text('No hostel data available'),
-                  SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadHostelData,
-                    child: Text('Load Data'),
+              child: Padding(
+                padding: EdgeInsets.all(isDesktop ? 48 : isTablet ? 32 : 24),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isDesktop ? 600 : double.infinity,
                   ),
-                ],
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.home_outlined, 
+                        size: isDesktop ? 120 : isTablet ? 96 : 64, 
+                        color: Colors.grey[400]
+                      ),
+                      SizedBox(height: isDesktop ? 32 : isTablet ? 24 : 16),
+                      Text(
+                        'No hostels found for this user',
+                        style: TextStyle(
+                          fontSize: isDesktop ? 24 : isTablet ? 20 : 18, 
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Poppins',
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: isDesktop ? 16 : 8),
+                      Text(
+                        'Create your first hostel to get started',
+                        style: TextStyle(
+                          fontSize: isDesktop ? 16 : isTablet ? 15 : 14, 
+                          color: Colors.grey[600],
+                          fontFamily: 'Poppins',
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: isDesktop ? 40 : isTablet ? 32 : 24),
+                      ElevatedButton.icon(
+                        onPressed: _createNewHostel,
+                        icon: Icon(
+                          Icons.add,
+                          size: isDesktop ? 24 : isTablet ? 20 : 18,
+                        ),
+                        label: Text(
+                          'Create Hostel',
+                          style: TextStyle(
+                            fontSize: isDesktop ? 18 : isTablet ? 16 : 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isDesktop ? 32 : isTablet ? 24 : 20, 
+                            vertical: isDesktop ? 16 : isTablet ? 12 : 10
+                          ),
+                          minimumSize: Size(
+                            isDesktop ? 200 : isTablet ? 160 : 140,
+                            isDesktop ? 56 : isTablet ? 48 : 44,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: isDesktop ? 24 : 16),
+                      TextButton(
+                        onPressed: _loadHostelData,
+                        child: Text(
+                          'Refresh',
+                          style: TextStyle(
+                            fontSize: isDesktop ? 16 : isTablet ? 15 : 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             );
           }
 
-          // Populate fields when data is loaded (only once)
-          if (!_isEditing && !_fieldsPopulated && hostelProvider.hostel != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _populateFormFields(hostelProvider.hostel!);
-            });
+          // Populate fields when data is loaded - ensure form shows the fetched data
+          if (hostelProvider.hostel != null) {
+            // Check if we need to populate the fields with fresh data
+            final currentHostel = hostelProvider.hostel!;
+            if (!_fieldsPopulated || _hostelNameController.text != currentHostel.hostelName) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                print('PgDetailsScreen: Populating form fields with: ${currentHostel.hostelName}');
+                _populateFormFields(currentHostel);
+              });
+            }
           }
 
           return Column(

@@ -64,6 +64,13 @@ class ServiceManager {
       final storedRefreshToken = prefs.getString(_refreshTokenKey);
       final storedUserData = prefs.getString(_userDataKey);
       
+      // Check for invalid "cookie-session-active" tokens and clear them
+      if (storedAccessToken == 'cookie-session-active' || storedRefreshToken == 'cookie-session-active') {
+        print('ServiceManager: Detected invalid cookie-session-active tokens, clearing them...');
+        clearAuth();
+        return false; // Force fresh login
+      }
+      
       if (storedAccessToken != null && storedRefreshToken != null && 
           storedAccessToken.isNotEmpty && storedRefreshToken.isNotEmpty) {
         print('ServiceManager: Found stored tokens in SharedPreferences');

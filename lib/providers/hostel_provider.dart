@@ -43,9 +43,15 @@ class HostelProvider extends ChangeNotifier {
       
       final result = await _serviceManager.hostelService.getOwnerHostels();
       
+      print('HostelProvider: Raw result from service: $result');
+      print('HostelProvider: Result keys: ${result.keys.toList()}');
+      
       if (result['success']) {
         final hostelsData = result['data'];
         final message = result['message'];
+        
+        print('HostelProvider: hostelsData type: ${hostelsData.runtimeType}');
+        print('HostelProvider: hostelsData: $hostelsData');
         
         // Handle "No hostels found" as successful empty result
         if (message != null && message.toLowerCase().contains('no hostels found')) {
@@ -53,14 +59,34 @@ class HostelProvider extends ChangeNotifier {
           _hostels = [];
           _hostel = null;
           _errorMessage = null; // This is not an error, just empty data
+        } else if (hostelsData is Map && hostelsData.containsKey('hostels')) {
+          // Backend returns {data: {hostels: [...]}}
+          final hostelsList = hostelsData['hostels'] as List<dynamic>;
+          print('HostelProvider: Raw hostels list length: ${hostelsList.length}');
+          if (hostelsList.isNotEmpty) {
+            print('HostelProvider: First hostel raw data: ${hostelsList.first}');
+            print('HostelProvider: About to call HostelModel.fromJson with individual hostel data');
+            _hostels = hostelsList.map((data) => HostelModel.fromJson(Map<String, dynamic>.from(data))).toList();
+            _hostel = _hostels.first; // Use first hostel as primary
+            print('HostelProvider: Parsed hostel name: ${_hostel!.hostelName}');
+            print('HostelProvider: Parsed hostel phone: ${_hostel!.phone}');
+            print('HostelProvider: Parsed hostel address: ${_hostel!.address}');
+            print('HostelProvider: Loaded ${_hostels.length} hostels from backend');
+          } else {
+            _hostels = [];
+            _hostel = null;
+          }
         } else if (hostelsData is List && hostelsData.isNotEmpty) {
+          // Direct array of hostels
           _hostels = hostelsData.map((data) => HostelModel.fromJson(Map<String, dynamic>.from(data))).toList();
           _hostel = _hostels.first; // Use first hostel as primary
-        } else if (hostelsData is Map) {
+        } else if (hostelsData is Map && !hostelsData.containsKey('hostels')) {
+          // Single hostel object (not a wrapper object with 'hostels' key)
           _hostel = HostelModel.fromJson(Map<String, dynamic>.from(hostelsData));
           _hostels = [_hostel!];
         } else {
-          // Empty data
+          // Empty data or unrecognized format
+          print('HostelProvider: Unrecognized hostelsData format: $hostelsData');
           _hostels = [];
           _hostel = null;
         }

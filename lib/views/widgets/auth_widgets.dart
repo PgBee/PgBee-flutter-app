@@ -12,71 +12,116 @@ class AuthWidgets {
   static Consumer authChoice(){
     return Consumer<AuthProvider>(
       builder: (context, provider, child){
-        return Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: provider.changeAuth,
-                child: Container(
-                  height: 56,
-                  decoration: ShapeDecoration(
-                    color: provider.isSignUp ? LightColor.black : LightColor.background,
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(
-                        width: 1,
-                        color: provider.isSignUp ? Colors.transparent : const Color(0x4C424242),
-                      ),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(10),
-                        bottomLeft: Radius.circular(10),
-                      ),
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Sign up',
-                      style: TextStyle(
-                        color: provider.isSignUp ? LightColor.background : LightColor.black,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                ),
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isSmallPhone = screenWidth < 360;
+        final isTablet = screenWidth >= 600;
+        final isDesktop = screenWidth >= 900;
+        
+        final height = isDesktop ? 72.0 : 
+                      isTablet ? 64.0 : 
+                      isSmallPhone ? 52.0 : 56.0;
+        
+        final fontSize = isDesktop ? 22.0 : 
+                        isTablet ? 20.0 : 
+                        isSmallPhone ? 16.0 : 18.0;
+        
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-            ),
-            Expanded(
-              child: GestureDetector(
-                onTap: provider.changeAuth,
-                child: Container(
-                  height: 56,
-                  decoration: ShapeDecoration(
-                    color: !provider.isSignUp ? LightColor.black : LightColor.background,
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(
-                        width: 1,
-                        color: !provider.isSignUp ? Colors.transparent : LightColor.black,
-                      ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: provider.changeAuth,
                       borderRadius: const BorderRadius.only(
-                        topRight: Radius.circular(10),
-                        bottomRight: Radius.circular(10),
+                        topLeft: Radius.circular(12),
+                        bottomLeft: Radius.circular(12),
                       ),
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      'Log in',
-                      style: TextStyle(
-                        color: !provider.isSignUp ? LightColor.background : LightColor.black,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w400,
+                      child: Container(
+                        height: height,
+                        decoration: BoxDecoration(
+                          color: provider.isSignUp ? LightColor.black : Colors.white,
+                          border: Border.all(
+                            width: 1.5,
+                            color: provider.isSignUp ? Colors.transparent : LightColor.grey.withOpacity(0.5),
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(12),
+                            bottomLeft: Radius.circular(12),
+                          ),
+                        ),
+                        child: Center(
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 200),
+                            style: TextStyle(
+                              color: provider.isSignUp ? Colors.white : LightColor.black,
+                              fontSize: fontSize,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Poppins',
+                            ),
+                            child: const Text('Sign up'),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+              Expanded(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: provider.changeAuth,
+                      borderRadius: const BorderRadius.only(
+                        topRight: Radius.circular(12),
+                        bottomRight: Radius.circular(12),
+                      ),
+                      child: Container(
+                        height: height,
+                        decoration: BoxDecoration(
+                          color: !provider.isSignUp ? LightColor.black : Colors.white,
+                          border: Border.all(
+                            width: 1.5,
+                            color: !provider.isSignUp ? Colors.transparent : LightColor.grey.withOpacity(0.5),
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(12),
+                            bottomRight: Radius.circular(12),
+                          ),
+                        ),
+                        child: Center(
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 200),
+                            style: TextStyle(
+                              color: !provider.isSignUp ? Colors.white : LightColor.black,
+                              fontSize: fontSize,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Poppins',
+                            ),
+                            child: const Text('Log in'),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       } 
     );
@@ -171,136 +216,270 @@ class AuthWidgets {
 // }
 
   // Divider
-  static Row divider(){
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 1,
-            color: const Color(0x4C424242),
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'OR',
-            style: TextStyle(
-              color: Color(0xFF424242),
-              fontSize: 14,
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w400,
+  static Widget divider(){
+    return Builder(
+      builder: (context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isDesktop = screenWidth >= 900;
+        final isTablet = screenWidth >= 600;
+        
+        final fontSize = isDesktop ? 16.0 : 
+                        isTablet ? 15.0 : 14.0;
+        
+        return Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 1.5,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      const Color(0x4C424242).withOpacity(0.5),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-        Expanded(
-          child: Container(
-            height: 1,
-            color: const Color(0x4C424242),
-          ),
-        ),
-      ],
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: isDesktop ? 24 : 16),
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: TextStyle(
+                  color: const Color(0xFF424242).withOpacity(0.8),
+                  fontSize: fontSize,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1.0,
+                ),
+                child: const Text('OR'),
+              ),
+            ),
+            Expanded(
+              child: Container(
+                height: 1.5,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      const Color(0x4C424242).withOpacity(0.5),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      }
     );
   }
 
   // Text Form Field and Name Widget
-  static Column formField({
+  static Widget formField({
     required String title,
     required TextEditingController controller,
     required String hintText,
     required TextInputType type,
     required String? Function(String?) validator
   }){
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: AppTheme.h6Style
-        ),
-        SizedBox(height: 8),
-        Container(
-          height: 61,
-          width: double.maxFinite,
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          decoration: ShapeDecoration(
-            shape: RoundedRectangleBorder(
-              side: BorderSide(
-                width: 1,
-                color: LightColor.grey,
+    return Builder(
+      builder: (context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isSmallPhone = screenWidth < 360;
+        final isTablet = screenWidth >= 600;
+        final isDesktop = screenWidth >= 900;
+        
+        final height = isDesktop ? 64.0 : 
+                      isTablet ? 60.0 : 
+                      isSmallPhone ? 52.0 : 56.0;
+        
+        final fontSize = isDesktop ? 18.0 : 
+                        isTablet ? 17.0 : 16.0;
+        
+        final titleFontSize = isDesktop ? 18.0 : 
+                             isTablet ? 17.0 : 16.0;
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              style: TextStyle(
+                fontSize: titleFontSize,
+                fontWeight: FontWeight.w500,
+                color: LightColor.black,
+                fontFamily: 'Poppins',
               ),
-              borderRadius: BorderRadius.circular(10),
+              child: Text(title),
             ),
-          ),
-          child: TextFormField(
-            cursorColor: LightColor.black,
-            keyboardType: type,
-            controller: controller,
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: AppTheme.h6Style,
-              border: InputBorder.none,
+            const SizedBox(height: 12),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: height,
+              width: double.maxFinite,
+              padding: EdgeInsets.symmetric(
+                horizontal: isDesktop ? 20 : 16, 
+                vertical: 8
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  width: 1.5,
+                  color: LightColor.grey.withOpacity(0.3),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: TextFormField(
+                cursorColor: LightColor.black,
+                keyboardType: type,
+                controller: controller,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w400,
+                  color: LightColor.black,
+                  fontFamily: 'Poppins',
+                ),
+                decoration: InputDecoration(
+                  hintText: hintText,
+                  hintStyle: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w400,
+                    color: LightColor.grey.withOpacity(0.7),
+                    fontFamily: 'Poppins',
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                validator: validator
+              ),
             ),
-            validator: validator
-          ),
-        ),
-      ],
+          ],
+        );
+      }
     );
   }
 
   // Password Form
-  static Column passwordField({
+  static Widget passwordField({
     required String? Function(String?) validator,
     required AuthProvider authProvider,
     required TextEditingController controller
   }){
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Password',
-          style: AppTheme.h6Style
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 61,
-          width: double.maxFinite,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          decoration: ShapeDecoration(
-            shape: RoundedRectangleBorder(
-              side: BorderSide(
-                width: 1,
-                color: LightColor.grey,
+    return Builder(
+      builder: (context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isSmallPhone = screenWidth < 360;
+        final isTablet = screenWidth >= 600;
+        final isDesktop = screenWidth >= 900;
+        
+        final height = isDesktop ? 64.0 : 
+                      isTablet ? 60.0 : 
+                      isSmallPhone ? 52.0 : 56.0;
+        
+        final fontSize = isDesktop ? 18.0 : 
+                        isTablet ? 17.0 : 16.0;
+        
+        final titleFontSize = isDesktop ? 18.0 : 
+                             isTablet ? 17.0 : 16.0;
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              style: TextStyle(
+                fontSize: titleFontSize,
+                fontWeight: FontWeight.w500,
+                color: LightColor.black,
+                fontFamily: 'Poppins',
               ),
-              borderRadius: BorderRadius.circular(10),
+              child: const Text('Password'),
             ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  keyboardType: TextInputType.number,
-                  controller: controller,
-                  obscureText: authProvider.obscurePassword,
-                  decoration: InputDecoration(
-                    hintText: 'Enter your password',
-                    hintStyle: AppTheme.h6Style,
-                    border: InputBorder.none,
+            const SizedBox(height: 12),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: height,
+              width: double.maxFinite,
+              padding: EdgeInsets.symmetric(
+                horizontal: isDesktop ? 20 : 16, 
+                vertical: 8
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  width: 1.5,
+                  color: LightColor.grey.withOpacity(0.3),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                  validator: validator,
-                ),
+                ],
               ),
-              GestureDetector(
-                onTap: authProvider.changeVisibility,
-                child: Icon(
-                  authProvider.obscurePassword ? Icons.visibility_off : Icons.visibility,
-                  color: LightColor.appPrimary,
-                  size: 20,
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      keyboardType: TextInputType.visiblePassword,
+                      controller: controller,
+                      obscureText: authProvider.obscurePassword,
+                      style: TextStyle(
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.w400,
+                        color: LightColor.black,
+                        fontFamily: 'Poppins',
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Enter your password',
+                        hintStyle: TextStyle(
+                          fontSize: fontSize,
+                          fontWeight: FontWeight.w400,
+                          color: LightColor.grey.withOpacity(0.7),
+                          fontFamily: 'Poppins',
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      validator: validator,
+                    ),
+                  ),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: authProvider.changeVisibility,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: Icon(
+                            authProvider.obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            key: ValueKey(authProvider.obscurePassword),
+                            color: LightColor.grey,
+                            size: isDesktop ? 24 : 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      }
     );
   }
 
@@ -371,23 +550,44 @@ class AuthWidgets {
   }
 
   // Forget Password Widget
-  static Align forgetPassword(){
-    return Align(
-      alignment: Alignment.centerRight,
-      child: GestureDetector(
-        onTap: () {
-          // Handle forgot password
-        },
-        child: Text(
-          'Forgot Your Password?',
-          style: TextStyle(
-            color: LightColor.grey,
-            fontSize: 12,
-            fontWeight: FontWeight.w400,
-            decoration: TextDecoration.underline,
+  static Widget forgetPassword(){
+    return Builder(
+      builder: (context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isDesktop = screenWidth >= 900;
+        final isTablet = screenWidth >= 600;
+        
+        final fontSize = isDesktop ? 15.0 : 
+                        isTablet ? 14.0 : 12.0;
+        
+        return Align(
+          alignment: Alignment.centerRight,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                // Handle forgot password
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: AnimatedDefaultTextStyle(
+                  duration: const Duration(milliseconds: 200),
+                  style: TextStyle(
+                    color: LightColor.grey.withOpacity(0.8),
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'Poppins',
+                    decoration: TextDecoration.underline,
+                    decorationColor: LightColor.grey.withOpacity(0.6),
+                  ),
+                  child: const Text('Forgot Your Password?'),
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      }
     );
   }
 
@@ -403,7 +603,7 @@ class AuthWidgets {
         const SizedBox(height: 8),
         Container(
           width: double.maxFinite,
-          height: 61,
+          height: 56,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: ShapeDecoration(
             shape: RoundedRectangleBorder(
@@ -417,30 +617,35 @@ class AuthWidgets {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 20,
-                    height: 20,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: LightColor.grey,
-                        width: 2,
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: LightColor.grey,
+                          width: 2,
+                        ),
+                        borderRadius: BorderRadius.circular(3),
                       ),
-                      borderRadius: BorderRadius.circular(3),
+                      child: Icon(
+                        Icons.check,
+                        size: 14,
+                        color: LightColor.black,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.check,
-                      size: 14,
-                      color: LightColor.black,
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Text(
+                        'I\'m not a robot',
+                        style: AppTheme.h6Style,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'I\'m not a robot',
-                    style: AppTheme.h6Style
-                  ),
-                ],
+                  ],
+                ),
               ),
               Container(
                 width: 40,
@@ -450,7 +655,10 @@ class AuthWidgets {
                   borderRadius: BorderRadius.all(Radius.circular(4)),
                 ),
                 child: Center(
-                  child: Image.asset('assets/images/recaptcha.png')
+                  child: Image.asset(
+                    'assets/images/recaptcha.png',
+                    fit: BoxFit.contain,
+                  )
                 ),
               ),
             ],
