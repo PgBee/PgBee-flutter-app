@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pgbee/services/service_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -6,6 +7,7 @@ import '../../providers/hostel_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/hostel_model.dart';
 import '../../services/local_storage_service.dart';
+//import '../../core/utils/string_extensions.dart';
 
 class PgDetailsScreen extends StatefulWidget {
   @override
@@ -17,7 +19,7 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
   final ImagePicker _picker = ImagePicker();
 
   // Controllers for form fields
-  final _nameController = TextEditingController();
+  final _hostelNameController = TextEditingController();  // Changed from name to hostelName
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _locationController = TextEditingController();
@@ -26,9 +28,11 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
   final _distanceController = TextEditingController();
   final _bedroomsController = TextEditingController();
   final _bathroomsController = TextEditingController();
+  final _genderController = TextEditingController();  // Added for gender field
   
   bool _curfew = false;
   List<AmenityModel> _amenities = [];
+  String _gender = 'male';  // Default value
   bool _isEditing = false;
   bool _isSaving = false;
   bool _isUploadingImages = false;
@@ -39,7 +43,13 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Ensure token is set in HostelService before any API call
+      final serviceManager = ServiceManager();
+      final accessToken = serviceManager.accessToken;
+      if (accessToken != null && accessToken.isNotEmpty) {
+        serviceManager.setAuthTokens(accessToken: accessToken);
+      }
       _loadHostelData();
     });
   }
@@ -56,6 +66,26 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
     }
     
     try {
+      // Force refresh from backend to get latest data
+      print('PgDetailsScreen: Refreshing hostel data from backend...');
+      await hostelProvider.refresh(ownerId);
+      
+      // If refresh was successful and we have data, use it
+      if (hostelProvider.hostel != null && hostelProvider.errorMessage == null) {
+        print('Refresh successful, using backend data: ${hostelProvider.hostel!.hostelName}');
+        _populateFormFields(hostelProvider.hostel!);
+        return;
+      }
+      
+      // If backend refresh failed or returned no hostels, fall back to local data
+      if (hostelProvider.errorMessage == null || hostelProvider.errorMessage!.contains('no hostels found')) {
+        // No hostels found is not an error - check for local data
+        print('No hostels found on backend, checking local storage...');
+      } else {
+        // Actual error occurred, fall back to local data
+        print('Backend error: ${hostelProvider.errorMessage}, falling back to local storage...');
+      }
+      
       // Always prioritize local data first to preserve user changes
       HostelModel? localHostel;
       
@@ -63,7 +93,7 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
       final localHostels = await LocalStorageService.getHostels();
       if (localHostels.isNotEmpty) {
         localHostel = localHostels.first; // Use first hostel found
-        print('Found local hostel data: ${localHostel.name}');
+        print('Found local hostel data: ${localHostel.hostelName}');
       }
       
       // If no hostels found, try using different keys
@@ -81,7 +111,7 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
       
       if (localHostel != null) {
         // Use local data (this preserves all saved changes)
-        print('Loading hostel data from local storage: ${localHostel.name}');
+        print('Loading hostel data from local storage: ${localHostel.hostelName}');
         _populateFormFields(localHostel);
         
         // Load local images if any
@@ -93,7 +123,7 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
         }
         
         // Update provider with local data only if it's empty
-        if (hostelProvider.hostel == null || hostelProvider.hostel!.name == 'PG Bee Hostel') {
+        if (hostelProvider.hostel == null || hostelProvider.hostel!.hostelName == 'PG Bee Hostel') {
           // Update provider state to match local storage
           hostelProvider.setHostelFromLocal(localHostel);
         }
@@ -143,7 +173,7 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
   }
 
   void _populateFormFields(HostelModel hostel) {
-    _nameController.text = hostel.name;
+    _hostelNameController.text = hostel.hostelName;
     _phoneController.text = hostel.phone;
     _addressController.text = hostel.address;
     _locationController.text = hostel.location;
@@ -153,6 +183,7 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
     _bedroomsController.text = hostel.bedrooms.toString();
     _bathroomsController.text = hostel.bathrooms.toString();
     _curfew = hostel.curfew;
+    _gender = hostel.gender;
     _amenities = List.from(hostel.amenities);
     _fieldsPopulated = true;
     setState(() {});
@@ -189,7 +220,7 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
       }
 
       final updatedHostel = currentHostel.copyWith(
-        name: _nameController.text.trim(),
+        hostelName: _hostelNameController.text.trim(),
         phone: _phoneController.text.trim(),
         address: _addressController.text.trim(),
         location: _locationController.text.trim(),
@@ -199,6 +230,7 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
         bedrooms: int.tryParse(_bedroomsController.text) ?? currentHostel.bedrooms,
         bathrooms: int.tryParse(_bathroomsController.text) ?? currentHostel.bathrooms,
         curfew: _curfew,
+        gender: _gender,
         amenities: _amenities,
       );
 
@@ -217,7 +249,7 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
       // Always save to local storage for persistence (this is crucial for data persistence)
       await LocalStorageService.saveHostel(updatedHostel);
       print('Hostel saved to local storage with key: ${updatedHostel.id}');
-      print('Saved hostel name: ${updatedHostel.name}');
+      print('Saved hostel name: ${updatedHostel.hostelName}');
       
       // Save local images if any
       if (_localImages.isNotEmpty) {
@@ -367,10 +399,14 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
       final currentHostel = hostelProvider.hostel;
       
       if (currentHostel != null && index < currentHostel.files.length) {
-        final updatedFiles = List<String>.from(currentHostel.files);
-        updatedFiles.removeAt(index);
+        final filesList = currentHostel.files.split(',')
+            .where((file) => file.isNotEmpty)
+            .toList();
+        filesList.removeAt(index);
         
-        final updatedHostel = currentHostel.copyWith(files: updatedFiles);
+        final updatedHostel = currentHostel.copyWith(
+          files: filesList.join(',')
+        );
         final success = await hostelProvider.updateHostel(updatedHostel);
         
         if (success) {
@@ -604,7 +640,7 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
             ),
             SizedBox(height: 16),
             _buildTextField(
-              controller: _nameController,
+              controller: _hostelNameController,
               label: 'Hostel Name',
               icon: Icons.home,
               enabled: _isEditing,
@@ -727,6 +763,40 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
               },
             ),
             SizedBox(height: 16),
+            // Gender Selection
+            Row(
+              children: [
+                Icon(Icons.person, color: Colors.grey[600]),
+                SizedBox(width: 12),
+                Text(
+                  'Gender:',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Spacer(),
+                DropdownButton<String>(
+                  value: <String>['male', 'female', 'any'].contains(_gender) ? _gender : 'male',
+                  onChanged: _isEditing ? (String? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _gender = newValue;
+                      });
+                    }
+                  } : null,
+                  items: <String>['male', 'female', 'any']
+                    .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value[0].toUpperCase() + value.substring(1)),
+                      );
+                    }).toList(),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            // Curfew Policy
             Row(
               children: [
                 Icon(Icons.schedule, color: Colors.grey[600]),
@@ -948,7 +1018,12 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
                   children: [
                     // Display existing photos from backend
                     if (hostel?.files.isNotEmpty == true)
-                      ...hostel!.files.asMap().entries.map((entry) {
+                      ...hostel!.files.split(',')
+                          .where((file) => file.isNotEmpty)
+                          .toList()
+                          .asMap()
+                          .entries
+                          .map((entry) {
                         final index = entry.key;
                         final imageUrl = entry.value;
                         return Container(
@@ -1232,7 +1307,7 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _hostelNameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
     _locationController.dispose();
@@ -1241,6 +1316,7 @@ class _PgDetailsScreenState extends State<PgDetailsScreen> {
     _distanceController.dispose();
     _bedroomsController.dispose();
     _bathroomsController.dispose();
+    _genderController.dispose();
     super.dispose();
   }
 }

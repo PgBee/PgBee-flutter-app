@@ -7,11 +7,15 @@ import 'package:pgbee/providers/hostel_provider.dart';
 import 'package:pgbee/providers/enquiry_provider.dart';
 import 'package:pgbee/core/widgets/app_initializer.dart';
 import 'package:pgbee/services/local_storage_service.dart';
+import 'package:pgbee/config/locator.dart';
 
 import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize service locator first
+  setupLocator();
   
   // Initialize local storage (Hive) for fallback functionality
   await LocalStorageService.init();

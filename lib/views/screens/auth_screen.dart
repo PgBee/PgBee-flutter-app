@@ -15,6 +15,22 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _restoreSession();
+  }
+
+  Future<void> _restoreSession() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.initializeSession();
+    // If already logged in, navigate to home
+    if (authProvider.isLoggedIn) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacementNamed(context, '/home');
+      });
+    }
+  }
 
   // Validators
   // first Name Validator 
@@ -54,6 +70,18 @@ class _AuthScreenState extends State<AuthScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _fNameController = TextEditingController();
   final TextEditingController _lNameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  // Phone number validator
+  String? phoneValidator(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Enter phone number';
+    }
+    final regex = RegExp(r'^[0-9]{10}$');
+    if (!regex.hasMatch(value)) {
+      return 'Enter a valid 10-digit phone number';
+    }
+    return null;
+  }
 
   // form Key
   final GlobalKey<FormState> _signUpFormKey = GlobalKey<FormState>();
@@ -90,13 +118,13 @@ class _AuthScreenState extends State<AuthScreen> {
         lastName: _lNameController.text,
         email: _emailController.text,
         password: _passwordController.text,
+        phoneNo: _phoneController.text.isNotEmpty ? _phoneController.text : null,
       );
       final success = await authProvider.signUp(authModel);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Registration successful')),
         );
-        // Navigate to root layout after successful registration
         Navigator.pushReplacementNamed(context, '/home');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -152,9 +180,9 @@ class _AuthScreenState extends State<AuthScreen> {
 
                       const SizedBox(height: 24),
                       
-                      // Google Sign In/Up button
-                      AuthWidgets.googleAuth(context: context, authProvider: authProvider),
-                      const SizedBox(height: 24),
+                      // // Google Sign In/Up button
+                      // AuthWidgets.googleAuth(context: context, authProvider: authProvider),
+                      // const SizedBox(height: 24),
 
                       // OR divider
                       AuthWidgets.divider(),
@@ -166,43 +194,53 @@ class _AuthScreenState extends State<AuthScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // First Name
-                            AuthWidgets.formField(
-                              validator: firstNameValidator,
-                              type: TextInputType.name,
-                              title: 'First name', 
-                              controller: _fNameController, 
-                              hintText: 'John'
-                            ),
-                            const SizedBox(height: 16),
+                          // First Name
+                          AuthWidgets.formField(
+                            validator: firstNameValidator,
+                            type: TextInputType.name,
+                            title: 'First name', 
+                            controller: _fNameController, 
+                            hintText: 'John'
+                          ),
+                          const SizedBox(height: 16),
 
-                            // Last Name
-                            AuthWidgets.formField(
-                              validator: lastNameValidator,
-                              type: TextInputType.name,
-                              title: 'Last name', 
-                              controller: _lNameController, 
-                              hintText: 'Doe'
-                            ),
-                            const SizedBox(height: 16),
+                          // Last Name
+                          AuthWidgets.formField(
+                            validator: lastNameValidator,
+                            type: TextInputType.name,
+                            title: 'Last name', 
+                            controller: _lNameController, 
+                            hintText: 'Doe'
+                          ),
+                          const SizedBox(height: 16),
 
-                            // Email
-                            AuthWidgets.formField(
-                              validator: validateEmail,
-                              title: 'Email', 
-                              controller: _emailController, 
-                              hintText: 'Enter your email address', 
-                              type: TextInputType.emailAddress
-                            ),
-                            const SizedBox(height: 16),
+                          // Phone Number
+                          AuthWidgets.formField(
+                            validator: phoneValidator,
+                            type: TextInputType.phone,
+                            title: 'Phone Number',
+                            controller: _phoneController,
+                            hintText: 'Enter your phone number',
+                          ),
+                          const SizedBox(height: 16),
 
-                            // Password
-                            AuthWidgets.passwordField(
-                              validator: passwordValidator,
-                              authProvider: authProvider,
-                              controller: _passwordController
-                            ),
-                            const SizedBox(height: 24),
+                          // Email
+                          AuthWidgets.formField(
+                            validator: validateEmail,
+                            title: 'Email', 
+                            controller: _emailController, 
+                            hintText: 'Enter your email address', 
+                            type: TextInputType.emailAddress
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Password
+                          AuthWidgets.passwordField(
+                            validator: passwordValidator,
+                            authProvider: authProvider,
+                            controller: _passwordController
+                          ),
+                          const SizedBox(height: 24),
 
                             // Terms and conditions for sign up
                             AuthWidgets.termsAndCondition(authProvider: authProvider),

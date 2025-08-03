@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import 'auth_service.dart';
 import 'hostel_service.dart';
 import 'amenities_service.dart';
@@ -29,91 +30,130 @@ class ServiceManager {
   String? get accessToken => _accessToken;
   String? get refreshToken => _refreshToken;
   Map<String, dynamic>? get currentUser => _currentUser;
-  bool get isAuthenticated => _accessToken != null;
+  bool get isAuthenticated => _accessToken != null && _accessToken!.isNotEmpty;
 
   // SharedPreferences keys
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
   static const String _userDataKey = 'user_data';
 
+  // Helper method to propagate tokens to all services
+  void _propagateTokensToServices() {
+    if (_accessToken != null && _accessToken!.isNotEmpty) {
+      print('ServiceManager: Propagating token to all services - token length: ${_accessToken!.length}');
+      authService.setAuthToken(_accessToken!);
+      hostelService.setAuthToken(_accessToken!);
+      amenitiesService.setAuthToken(_accessToken!);
+      ownerService.setAuthToken(_accessToken!);
+      enquiryService.setAuthToken(_accessToken!);
+      reviewService.setAuthToken(_accessToken!);
+      print('ServiceManager: Tokens propagated to all services');
+    } else {
+      print('ServiceManager: No token to propagate - token is null or empty');
+    }
+  }
+
   // Initialize and check for saved session
   Future<bool> initializeSession() async {
     try {
+      print('ServiceManager.initializeSession: Starting initialization...');
+      
+      // Try to restore from SharedPreferences directly first
       final prefs = await SharedPreferences.getInstance();
+      final storedAccessToken = prefs.getString(_accessTokenKey);
+      final storedRefreshToken = prefs.getString(_refreshTokenKey);
+      final storedUserData = prefs.getString(_userDataKey);
       
-      final savedAccessToken = prefs.getString(_accessTokenKey);
-      final savedRefreshToken = prefs.getString(_refreshTokenKey);
-      final savedUserData = prefs.getString(_userDataKey);
-      
-      if (savedAccessToken != null && savedRefreshToken != null) {
-        print('Found saved tokens, attempting to restore session...');
+      if (storedAccessToken != null && storedRefreshToken != null && 
+          storedAccessToken.isNotEmpty && storedRefreshToken.isNotEmpty) {
+        print('ServiceManager: Found stored tokens in SharedPreferences');
+        print('ServiceManager: Access token length: ${storedAccessToken.length}');
+        print('ServiceManager: Refresh token length: ${storedRefreshToken.length}');
+        print('ServiceManager: Access token preview: ${storedAccessToken.length > 10 ? storedAccessToken.substring(0, 10) + "..." : storedAccessToken}');
         
-        // Check if tokens are obviously expired before attempting restore
-        if (_isTokenExpired(savedAccessToken)) {
-          print('Saved access token is expired, clearing session');
-          await clearSavedSession();
-          return false;
-        }
-        
-        // Restore user data if available
+        // Parse user data
         Map<String, dynamic>? userData;
-        if (savedUserData != null) {
+        if (storedUserData != null) {
           try {
-            userData = jsonDecode(savedUserData);
+            userData = Map<String, dynamic>.from(jsonDecode(storedUserData));
           } catch (e) {
-            print('Error parsing saved user data: $e');
+            print('ServiceManager: Error parsing stored user data: $e');
           }
         }
         
-        setAuthTokens(
-          accessToken: savedAccessToken,
-          refreshToken: savedRefreshToken,
-          user: userData,
-        );
-        
-        // Try to refresh token to ensure it's still valid
-        print('Checking token validity and refreshing if needed...');
-        final refreshResult = await refreshTokenIfNeeded();
-        if (!refreshResult) {
-          print('Token refresh failed during session initialization');
-          // If refresh failed, the clearSavedSession was already called in refreshTokenIfNeeded
-          return false;
+        // Check if the stored access token is expired before using it
+        if (storedAccessToken != 'cookie-session-active') {
+          try {
+            final isExpired = JwtDecoder.isExpired(storedAccessToken);
+            if (isExpired) {
+              print('ServiceManager: Stored access token is expired, clearing session');
+              await clearSavedSession();
+              return false;
+            }
+            print('ServiceManager: Stored access token is valid and not expired');
+          } catch (e) {
+            print('ServiceManager: Error checking stored token expiration: $e');
+            print('ServiceManager: Clearing potentially invalid tokens');
+            await clearSavedSession();
+            return false;
+          }
         }
         
-        print('Session restored successfully');
+        // Set tokens directly
+        _accessToken = storedAccessToken;
+        _refreshToken = storedRefreshToken;
+        _currentUser = userData;
+        
+        // Load stored cookies for session persistence
+        await AuthService.loadCookiesFromStorage();
+        
+        // Propagate tokens to all services immediately
+        _propagateTokensToServices();
+        
+        // Also ensure HostelService has the token
+        await hostelService.restoreAuthToken();
+        
+        print('ServiceManager: Session restored from SharedPreferences and tokens propagated');
         return true;
-      } else {
-        print('No saved tokens found');
       }
+      
+      // Fallback: check if auth service has valid session
+      final hasValidSession = await authService.hasValidSession();
+      
+      if (hasValidSession) {
+        print('Valid session found from AuthService, restoring tokens...');
+        
+        // Get tokens from auth service
+        final accessToken = await authService.getAccessToken();
+        final refreshToken = await authService.getRefreshToken();
+        final userData = await authService.getUserData();
+        
+        if (accessToken != null && refreshToken != null) {
+          // Set tokens in service manager
+          _accessToken = accessToken;
+          _refreshToken = refreshToken;
+          _currentUser = userData;
+          
+          // Propagate tokens to all services IMMEDIATELY
+          _propagateTokensToServices();
+          
+          // Save to SharedPreferences
+          await _saveTokensToSharedPreferences(accessToken, refreshToken, userData);
+          
+          // Also restore tokens in hostel service to ensure it has them
+          await hostelService.restoreAuthToken();
+          
+          print('ServiceManager: Session restored from AuthService and tokens propagated');
+          return true;
+        }
+      }
+      
+      print('ServiceManager: No valid session found');
+      return false;
     } catch (e) {
-      print('Error initializing session: $e');
-    }
-    
-    print('Session initialization failed - user needs to log in');
-    return false;
-  }
-
-  // Save session to SharedPreferences
-  Future<void> saveSession() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      
-      if (_accessToken != null) {
-        await prefs.setString(_accessTokenKey, _accessToken!);
-      }
-      
-      if (_refreshToken != null) {
-        await prefs.setString(_refreshTokenKey, _refreshToken!);
-      }
-      
-      if (_currentUser != null) {
-        // Properly encode user data as JSON
-        await prefs.setString(_userDataKey, jsonEncode(_currentUser!));
-      }
-      
-      print('Session saved successfully');
-    } catch (e) {
-      print('Error saving session: $e');
+      print('ServiceManager.initializeSession error: $e');
+      await clearSavedSession();
+      return false;
     }
   }
 
@@ -131,81 +171,89 @@ class ServiceManager {
   }
 
   // Set authentication tokens and propagate to all services
-  void setAuthTokens({
+  Future<void> setAuthTokens({
     required String accessToken,
     String? refreshToken,
     Map<String, dynamic>? user,
-  }) {
+  }) async {
+    print('ServiceManager.setAuthTokens: Setting tokens...');
+    
     _accessToken = accessToken;
     _refreshToken = refreshToken;
     _currentUser = user;
 
-    // Set token in all services
-    hostelService.setAuthToken(accessToken);
-    amenitiesService.setAuthToken(accessToken);
-    ownerService.setAuthToken(accessToken);
-    enquiryService.setAuthToken(accessToken);
-    reviewService.setAuthToken(accessToken);
+    // Propagate tokens to all services IMMEDIATELY before saving
+    _propagateTokensToServices();
+    print('ServiceManager: Tokens propagated to services immediately');
+
+    // Save tokens via AuthService for persistence
+    if (refreshToken != null) {
+      authService.saveTokens(accessToken, refreshToken, user);
+    }
+
+    // Force save to SharedPreferences
+    await _saveTokensToSharedPreferences(accessToken, refreshToken, user);
+
+    print('ServiceManager: Tokens set, propagated, and saved to all services');
+  }
+  
+  // Helper method to save tokens directly to SharedPreferences
+  Future<void> _saveTokensToSharedPreferences(String accessToken, String? refreshToken, Map<String, dynamic>? user) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_accessTokenKey, accessToken);
+      if (refreshToken != null) {
+        await prefs.setString(_refreshTokenKey, refreshToken);
+      }
+      if (user != null) {
+        await prefs.setString(_userDataKey, jsonEncode(user));
+      }
+      print('ServiceManager: Tokens saved directly to SharedPreferences');
+    } catch (e) {
+      print('ServiceManager: Error saving tokens to SharedPreferences: $e');
+    }
+  }
+
+  // Ensure tokens are available and propagated to all services
+  Future<bool> ensureTokensReady() async {
+    print('ServiceManager.ensureTokensReady: Checking token availability...');
     
-    // Automatically save session to SharedPreferences
-    saveSession();
+    // If we have tokens in memory, propagate them
+    if (_accessToken != null && _accessToken!.isNotEmpty) {
+      print('ServiceManager: Tokens available in memory, propagating...');
+      _propagateTokensToServices();
+      return true;
+    }
+    
+    // If no tokens in memory, try to restore from session
+    print('ServiceManager: No tokens in memory, attempting session restore...');
+    final sessionRestored = await initializeSession();
+    
+    if (!sessionRestored) {
+      print('ServiceManager: Session restoration failed - authentication required');
+      return false;
+    }
+    
+    return true;
   }
 
   // Clear authentication tokens
   void clearAuth() {
+    print('ServiceManager.clearAuth: Clearing tokens...');
+    
     _accessToken = null;
     _refreshToken = null;
     _currentUser = null;
 
-    // Clear tokens from all services by setting empty headers
-    // Services should handle empty token gracefully
-    
-    // Clear saved session from SharedPreferences
-    clearSavedSession();
+    // Clear saved session from AuthService
+    authService.clearTokens();
+    print('ServiceManager: Authentication cleared');
   }
 
   // Check if JWT token is expired
   bool _isTokenExpired(String token) {
     try {
-      // JWT has 3 parts separated by dots
-      final parts = token.split('.');
-      if (parts.length != 3) {
-        print('Invalid JWT format - expected 3 parts, got ${parts.length}');
-        return true;
-      }
-      
-      // Decode the payload (second part)
-      String payload = parts[1];
-      
-      // Add padding if needed for base64 decoding
-      while (payload.length % 4 != 0) {
-        payload += '=';
-      }
-      
-      final decoded = utf8.decode(base64Url.decode(payload));
-      final Map<String, dynamic> payloadMap = jsonDecode(decoded);
-      
-      print('Token payload (partial): ${payloadMap.keys.toList()}');
-      
-      // Check expiration time (exp claim is in seconds since epoch)
-      final exp = payloadMap['exp'];
-      if (exp == null) {
-        print('No expiration time found in token');
-        return true;
-      }
-      
-      final expirationTime = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
-      final now = DateTime.now();
-      
-      print('Token expires at: $expirationTime, current time: $now');
-      
-      // Add a 5-minute buffer to refresh before actual expiration
-      final buffer = Duration(minutes: 5);
-      
-      bool isExpired = now.isAfter(expirationTime.subtract(buffer));
-      print('Token expired (with 5min buffer): $isExpired');
-      
-      return isExpired;
+      return JwtDecoder.isExpired(token);
     } catch (e) {
       print('Error checking token expiration: $e');
       return true; // Consider token expired if we can't parse it
@@ -228,10 +276,9 @@ class ServiceManager {
     print('Attempting to refresh token...');
     try {
       final result = await authService.refreshToken(_refreshToken!);
-      print('Token refresh response: $result');
       
       if (result['success'] == true) {
-        setAuthTokens(
+        await setAuthTokens(
           accessToken: result['accessToken'],
           refreshToken: result['refreshToken'],
           user: _currentUser,
@@ -240,30 +287,12 @@ class ServiceManager {
         return true;
       } else {
         print('Token refresh failed: ${result['message'] ?? result['error'] ?? 'Unknown error'}');
-        // Clear tokens and saved session when refresh fails
         await clearSavedSession();
         return false;
       }
     } catch (e) {
       print('Token refresh failed with exception: $e');
-      // Check if it's a 401/403 error indicating invalid tokens
-      String errorMessage = e.toString().toLowerCase();
-      if (errorMessage.contains('401') || 
-          errorMessage.contains('403') || 
-          errorMessage.contains('unauthorized') ||
-          errorMessage.contains('forbidden') ||
-          errorMessage.contains('invalid') ||
-          errorMessage.contains('expired')) {
-        print('Authentication error detected, clearing saved session');
-        // Clear saved session for authentication errors
-        await clearSavedSession();
-      } else {
-        print('Network or temporary error, keeping saved session');
-        // For network errors, just clear in-memory tokens
-        _accessToken = null;
-        _refreshToken = null;
-        _currentUser = null;
-      }
+      await clearSavedSession();
       return false;
     }
   }
@@ -272,67 +301,26 @@ class ServiceManager {
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final result = await authService.signIn(email, password);
-      
       if (result['success'] == true) {
-        setAuthTokens(
-          accessToken: result['accessToken'] ?? result['data']?['accessToken'],
-          refreshToken: result['refreshToken'] ?? result['data']?['refreshToken'],
-          user: result['user'] ?? result['data']?['user'],
-        );
+        final accessToken = result['accessToken'] ?? result['data']?['accessToken'];
+        final refreshToken = result['refreshToken'] ?? result['data']?['refreshToken'];
+        final user = result['user'] ?? result['data']?['user'];
+        
+        if (accessToken != null) {
+          await setAuthTokens(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            user: user,
+          );
+          print('ServiceManager: Login successful, tokens propagated to all services');
+        }
       }
-      
       return result;
     } catch (e) {
       print('Login error: $e');
       return {
         'success': false,
         'error': 'Login failed',
-      };
-    }
-  }
-
-  // Login with Google
-  Future<Map<String, dynamic>> loginWithGoogle() async {
-    try {
-      final result = await authService.googleSignIn();
-      
-      if (result['success'] == true) {
-        setAuthTokens(
-          accessToken: result['accessToken'] ?? result['data']?['accessToken'],
-          refreshToken: result['refreshToken'] ?? result['data']?['refreshToken'],
-          user: result['user'] ?? result['data']?['user'],
-        );
-      }
-      
-      return result;
-    } catch (e) {
-      print('Google login error: $e');
-      return {
-        'success': false,
-        'error': 'Google login failed',
-      };
-    }
-  }
-
-  // Register new user
-  Future<Map<String, dynamic>> register(dynamic userModel) async {
-    try {
-      final result = await authService.signUp(userModel);
-      
-      if (result['success'] == true) {
-        setAuthTokens(
-          accessToken: result['accessToken'] ?? result['data']?['accessToken'],
-          refreshToken: result['refreshToken'] ?? result['data']?['refreshToken'],
-          user: result['user'] ?? result['data']?['user'],
-        );
-      }
-      
-      return result;
-    } catch (e) {
-      print('Registration error: $e');
-      return {
-        'success': false,
-        'error': 'Registration failed',
       };
     }
   }
@@ -370,12 +358,27 @@ class ServiceManager {
   }
 
   // Handle API errors and logout if tokens are invalid
-  void handleApiError(dynamic error) {
+  Future<void> handleApiError(dynamic error) async {
     if (error.toString().contains('401') || 
         error.toString().contains('Unauthorized') ||
         error.toString().contains('Invalid token')) {
-      print('API error indicates invalid tokens, forcing logout');
-      forceLogout();
+      print('API error indicates invalid tokens, attempting refresh first');
+      
+      // Try to refresh token before forcing logout
+      bool refreshed = false;
+      try {
+        refreshed = await authService.refreshAccessToken();
+        print('ServiceManager.handleApiError: Token refresh result: $refreshed');
+      } catch (e) {
+        print('ServiceManager.handleApiError: Token refresh failed: $e');
+      }
+      
+      if (!refreshed) {
+        print('Token refresh failed, forcing logout');
+        await forceLogout();
+      } else {
+        print('Token refreshed successfully, error may be retried');
+      }
     }
   }
 

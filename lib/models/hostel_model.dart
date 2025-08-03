@@ -1,6 +1,6 @@
 class HostelModel {
   final String id;
-  final String name;
+  final String hostelName;  // Changed to match backend
   final String ownerName;
   final String phone;
   final String address;
@@ -11,7 +11,8 @@ class HostelModel {
   final int bedrooms;
   final int bathrooms;
   final bool curfew;
-  final List<String> files; // Photo URLs
+  final String gender;     // Added to match backend
+  final String files;     // Changed to match backend (comma-separated string)
   final List<AmenityModel> amenities;
   final int admittedStudents;
   final DateTime createdAt;
@@ -19,7 +20,7 @@ class HostelModel {
 
   HostelModel({
     required this.id,
-    required this.name,
+    required this.hostelName,
     required this.ownerName,
     required this.phone,
     required this.address,
@@ -30,6 +31,7 @@ class HostelModel {
     required this.bedrooms,
     required this.bathrooms,
     required this.curfew,
+    required this.gender,
     required this.files,
     required this.amenities,
     required this.admittedStudents,
@@ -40,7 +42,7 @@ class HostelModel {
   factory HostelModel.fromJson(Map<String, dynamic> json) {
     return HostelModel(
       id: json['id'] ?? '',
-      name: json['hostelName'] ?? json['name'] ?? '',
+      hostelName: json['hostelName'] ?? '',
       ownerName: json['name'] ?? json['ownerName'] ?? '',
       phone: json['phone'] ?? '',
       address: json['address'] ?? '',
@@ -51,9 +53,8 @@ class HostelModel {
       bedrooms: json['bedrooms'] ?? 1,
       bathrooms: json['bathrooms'] ?? 1,
       curfew: json['curfew'] ?? false,
-      files: json['files'] != null 
-          ? (json['files'] as String).split(',').map((f) => f.trim()).toList()
-          : <String>[],
+      gender: json['gender'] ?? 'mixed',
+      files: json['files'] ?? '',
       amenities: json['amenities'] != null 
           ? (json['amenities'] as List).map((a) => AmenityModel.fromJson(a)).toList()
           : <AmenityModel>[],
@@ -66,7 +67,7 @@ class HostelModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'hostelName': name,
+      'hostelName': hostelName,
       'name': ownerName,
       'phone': phone,
       'address': address,
@@ -77,7 +78,8 @@ class HostelModel {
       'bedrooms': bedrooms,
       'bathrooms': bathrooms,
       'curfew': curfew,
-      'files': files.join(', '),
+      'gender': gender,
+      'files': files,
       'amenities': amenities.map((a) => a.toJson()).toList(),
       'admittedStudents': admittedStudents,
       'createdAt': createdAt.toIso8601String(),
@@ -87,7 +89,7 @@ class HostelModel {
 
   HostelModel copyWith({
     String? id,
-    String? name,
+    String? hostelName,
     String? ownerName,
     String? phone,
     String? address,
@@ -98,7 +100,8 @@ class HostelModel {
     int? bedrooms,
     int? bathrooms,
     bool? curfew,
-    List<String>? files,
+    String? gender,
+    String? files,
     List<AmenityModel>? amenities,
     int? admittedStudents,
     DateTime? createdAt,
@@ -106,7 +109,7 @@ class HostelModel {
   }) {
     return HostelModel(
       id: id ?? this.id,
-      name: name ?? this.name,
+      hostelName: hostelName ?? this.hostelName,
       ownerName: ownerName ?? this.ownerName,
       phone: phone ?? this.phone,
       address: address ?? this.address,
@@ -117,6 +120,7 @@ class HostelModel {
       bedrooms: bedrooms ?? this.bedrooms,
       bathrooms: bathrooms ?? this.bathrooms,
       curfew: curfew ?? this.curfew,
+      gender: gender ?? this.gender,
       files: files ?? this.files,
       amenities: amenities ?? this.amenities,
       admittedStudents: admittedStudents ?? this.admittedStudents,

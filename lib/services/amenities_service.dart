@@ -1,11 +1,12 @@
-import 'package:dio/dio.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AmenitiesService {
-  final Dio _dio = Dio(BaseOptions(baseUrl: 'https://server.pgbee.in'));
-  
-  // Set authorization header for authenticated requests
+  final String _baseUrl = 'https://server.pgbee.in';
+  String? _authToken;
+
   void setAuthToken(String token) {
-    _dio.options.headers['Authorization'] = 'Bearer $token';
+    _authToken = token;
   }
 
   // Create amenities for a hostel - POST /ammenities
@@ -29,7 +30,13 @@ class AmenitiesService {
     required int studentsCount,
   }) async {
     try {
-      final response = await _dio.post('/ammenities', data: {
+      final url = Uri.parse('$_baseUrl/ammenities');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      };
+      final body = jsonEncode({
         'wifi': wifi,
         'ac': ac,
         'kitchen': kitchen,
@@ -48,22 +55,15 @@ class AmenitiesService {
         'studentsCount': studentsCount,
         'hostelId': hostelId,
       });
-
+      final response = await http.post(url, headers: headers, body: body);
+      final data = response.body.isNotEmpty ? jsonDecode(response.body) : null;
       return {
         'success': response.statusCode == 200 || response.statusCode == 201,
-        'data': response.data,
+        'data': data,
         'message': 'Amenities created successfully',
       };
     } catch (e) {
       print('Amenities Service Error - Create: $e');
-      
-      if (e is DioException) {
-        return {
-          'success': false,
-          'error': e.response?.data['message'] ?? 'Failed to create amenities',
-        };
-      }
-      
       return {
         'success': false,
         'error': 'Failed to create amenities',
@@ -74,22 +74,26 @@ class AmenitiesService {
   // Get amenities for a hostel - GET /ammenities/:id
   Future<Map<String, dynamic>> getAmenities(String hostelId) async {
     try {
-      final response = await _dio.get('/ammenities/$hostelId');
-
-      return {
-        'success': response.statusCode == 200,
-        'data': response.data,
+      final url = Uri.parse('$_baseUrl/ammenities/$hostelId');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
       };
-    } catch (e) {
-      print('Amenities Service Error - Get: $e');
-      
-      if (e is DioException && e.response?.statusCode == 404) {
+      final response = await http.get(url, headers: headers);
+      final data = response.body.isNotEmpty ? jsonDecode(response.body) : null;
+      if (response.statusCode == 404) {
         return {
           'success': false,
           'error': 'Amenities not found',
         };
       }
-      
+      return {
+        'success': response.statusCode == 200,
+        'data': data,
+      };
+    } catch (e) {
+      print('Amenities Service Error - Get: $e');
       // Return mock data for testing
       return {
         'success': true,
@@ -120,7 +124,13 @@ class AmenitiesService {
     required int studentsCount,
   }) async {
     try {
-      final response = await _dio.put('/ammenities/$amenitiesId', data: {
+      final url = Uri.parse('$_baseUrl/ammenities/$amenitiesId');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      };
+      final body = jsonEncode({
         'wifi': wifi,
         'ac': ac,
         'kitchen': kitchen,
@@ -139,22 +149,15 @@ class AmenitiesService {
         'studentsCount': studentsCount,
         'hostelId': hostelId,
       });
-
+      final response = await http.put(url, headers: headers, body: body);
+      final data = response.body.isNotEmpty ? jsonDecode(response.body) : null;
       return {
         'success': response.statusCode == 200,
-        'data': response.data,
+        'data': data,
         'message': 'Amenities updated successfully',
       };
     } catch (e) {
       print('Amenities Service Error - Update: $e');
-      
-      if (e is DioException) {
-        return {
-          'success': false,
-          'error': e.response?.data['message'] ?? 'Failed to update amenities',
-        };
-      }
-      
       return {
         'success': false,
         'error': 'Failed to update amenities',
@@ -165,22 +168,25 @@ class AmenitiesService {
   // Delete amenities - DELETE /ammenities/:id
   Future<Map<String, dynamic>> deleteAmenities(String amenitiesId) async {
     try {
-      final response = await _dio.delete('/ammenities/$amenitiesId');
-
+      final url = Uri.parse('$_baseUrl/ammenities/$amenitiesId');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      };
+      final response = await http.delete(url, headers: headers);
+      if (response.statusCode == 404) {
+        return {
+          'success': false,
+          'error': 'Amenities not found',
+        };
+      }
       return {
         'success': response.statusCode == 200 || response.statusCode == 204,
         'message': 'Amenities deleted successfully',
       };
     } catch (e) {
       print('Amenities Service Error - Delete: $e');
-      
-      if (e is DioException && e.response?.statusCode == 404) {
-        return {
-          'success': false,
-          'error': 'Amenities not found',
-        };
-      }
-      
       return {
         'success': false,
         'error': 'Failed to delete amenities',

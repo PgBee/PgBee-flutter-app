@@ -1,11 +1,12 @@
-import 'package:dio/dio.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class OwnerService {
-  final Dio _dio = Dio(BaseOptions(baseUrl: 'https://server.pgbee.in'));
-  
-  // Set authorization header for authenticated requests
+  final String _baseUrl = 'https://server.pgbee.in';
+  String? _authToken;
+
   void setAuthToken(String token) {
-    _dio.options.headers['Authorization'] = 'Bearer $token';
+    _authToken = token;
   }
 
   // Register as owner - POST /owner/owners
@@ -14,26 +15,25 @@ class OwnerService {
     required String phone,
   }) async {
     try {
-      final response = await _dio.post('/owner/owners', data: {
+      final url = Uri.parse('$_baseUrl/owner/owners');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      };
+      final body = jsonEncode({
         'name': name,
         'phone': phone,
       });
-
+      final response = await http.post(url, headers: headers, body: body);
+      final data = response.body.isNotEmpty ? jsonDecode(response.body) : null;
       return {
         'success': response.statusCode == 200 || response.statusCode == 201,
-        'data': response.data,
+        'data': data,
         'message': 'Owner registered successfully',
       };
     } catch (e) {
       print('Owner Service Error - Register: $e');
-      
-      if (e is DioException) {
-        return {
-          'success': false,
-          'error': e.response?.data['message'] ?? 'Failed to register as owner',
-        };
-      }
-      
       return {
         'success': false,
         'error': 'Failed to register as owner',
@@ -44,11 +44,17 @@ class OwnerService {
   // Get all owners - GET /owner/owners
   Future<Map<String, dynamic>> getAllOwners() async {
     try {
-      final response = await _dio.get('/owner/owners');
-
+      final url = Uri.parse('$_baseUrl/owner/owners');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      };
+      final response = await http.get(url, headers: headers);
+      final data = response.body.isNotEmpty ? jsonDecode(response.body) : null;
       return {
         'success': response.statusCode == 200,
-        'data': response.data,
+        'data': data,
       };
     } catch (e) {
       print('Owner Service Error - Get All: $e');
@@ -62,22 +68,26 @@ class OwnerService {
   // Get owner by ID - GET /owner/owners/:id
   Future<Map<String, dynamic>> getOwnerById(String id) async {
     try {
-      final response = await _dio.get('/owner/owners/$id');
-
-      return {
-        'success': response.statusCode == 200,
-        'data': response.data,
+      final url = Uri.parse('$_baseUrl/owner/owners/$id');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
       };
-    } catch (e) {
-      print('Owner Service Error - Get By ID: $e');
-      
-      if (e is DioException && e.response?.statusCode == 404) {
+      final response = await http.get(url, headers: headers);
+      final data = response.body.isNotEmpty ? jsonDecode(response.body) : null;
+      if (response.statusCode == 404) {
         return {
           'success': false,
           'error': 'Owner not found',
         };
       }
-      
+      return {
+        'success': response.statusCode == 200,
+        'data': data,
+      };
+    } catch (e) {
+      print('Owner Service Error - Get By ID: $e');
       return {
         'success': false,
         'error': 'Failed to fetch owner details',
@@ -92,26 +102,25 @@ class OwnerService {
     required String phone,
   }) async {
     try {
-      final response = await _dio.put('/owner/owners/$id', data: {
+      final url = Uri.parse('$_baseUrl/owner/owners/$id');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      };
+      final body = jsonEncode({
         'name': name,
         'phone': phone,
       });
-
+      final response = await http.put(url, headers: headers, body: body);
+      final data = response.body.isNotEmpty ? jsonDecode(response.body) : null;
       return {
         'success': response.statusCode == 200,
-        'data': response.data,
+        'data': data,
         'message': 'Owner profile updated successfully',
       };
     } catch (e) {
       print('Owner Service Error - Update: $e');
-      
-      if (e is DioException) {
-        return {
-          'success': false,
-          'error': e.response?.data['message'] ?? 'Failed to update owner profile',
-        };
-      }
-      
       return {
         'success': false,
         'error': 'Failed to update owner profile',
@@ -122,22 +131,25 @@ class OwnerService {
   // Delete owner - DELETE /owner/owners/:id
   Future<Map<String, dynamic>> deleteOwner(String id) async {
     try {
-      final response = await _dio.delete('/owner/owners/$id');
-
+      final url = Uri.parse('$_baseUrl/owner/owners/$id');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      };
+      final response = await http.delete(url, headers: headers);
+      if (response.statusCode == 404) {
+        return {
+          'success': false,
+          'error': 'Owner not found',
+        };
+      }
       return {
         'success': response.statusCode == 200 || response.statusCode == 204,
         'message': 'Owner deleted successfully',
       };
     } catch (e) {
       print('Owner Service Error - Delete: $e');
-      
-      if (e is DioException && e.response?.statusCode == 404) {
-        return {
-          'success': false,
-          'error': 'Owner not found',
-        };
-      }
-      
       return {
         'success': false,
         'error': 'Failed to delete owner',
@@ -146,7 +158,7 @@ class OwnerService {
   }
 
   // Mock data for testing when backend is unavailable
-  static final Map<String, dynamic> mockOwnerData = {
+  final Map<String, dynamic> mockOwnerData = {
     'id': 'owner_1',
     'name': 'John Doe',
     'phone': '9876543210',

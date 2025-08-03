@@ -3,9 +3,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/hostel_model.dart';
 import '../services/service_manager.dart';
 import '../services/local_storage_service.dart';
+import '../config/locator.dart';
 
 class HostelProvider extends ChangeNotifier {
-  final ServiceManager _serviceManager = ServiceManager();
+  late final ServiceManager _serviceManager;
+  
+  HostelProvider() {
+    _serviceManager = locator<ServiceManager>();
+  }
   
   HostelModel? _hostel;
   List<HostelModel> _hostels = [];
@@ -24,16 +29,40 @@ class HostelProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Ensure tokens are ready before making API calls
+      print('HostelProvider: Ensuring tokens are ready before API call...');
+      final tokensReady = await _serviceManager.ensureTokensReady();
+      if (!tokensReady) {
+        print('HostelProvider: Tokens not available, cannot proceed with API call');
+        _errorMessage = 'Authentication tokens not available. Please log in again.';
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+      print('HostelProvider: Tokens ready, proceeding with API call...');
+      
       final result = await _serviceManager.hostelService.getOwnerHostels();
       
       if (result['success']) {
         final hostelsData = result['data'];
-        if (hostelsData is List && hostelsData.isNotEmpty) {
+        final message = result['message'];
+        
+        // Handle "No hostels found" as successful empty result
+        if (message != null && message.toLowerCase().contains('no hostels found')) {
+          print('HostelProvider: No hostels found for user - showing empty state');
+          _hostels = [];
+          _hostel = null;
+          _errorMessage = null; // This is not an error, just empty data
+        } else if (hostelsData is List && hostelsData.isNotEmpty) {
           _hostels = hostelsData.map((data) => HostelModel.fromJson(Map<String, dynamic>.from(data))).toList();
           _hostel = _hostels.first; // Use first hostel as primary
         } else if (hostelsData is Map) {
           _hostel = HostelModel.fromJson(Map<String, dynamic>.from(hostelsData));
           _hostels = [_hostel!];
+        } else {
+          // Empty data
+          _hostels = [];
+          _hostel = null;
         }
         
         // For new users or if backend doesn't have admitted students count,
@@ -45,7 +74,7 @@ class HostelProvider extends ChangeNotifier {
           }
         }
         
-        // Save to local storage for fallback
+        // Save to local storage for fallback (only if we have actual data)
         if (_hostel != null) {
           await LocalStorageService.saveHostel(_hostel!);
         }
@@ -53,15 +82,60 @@ class HostelProvider extends ChangeNotifier {
         _errorMessage = null;
       } else {
         _errorMessage = result['error'] ?? 'Failed to load hostel details';
-        // Fallback to local storage if backend fails
-        await _loadFromLocalStorage();
+        
+        // Check if it's a connection error
+        if (result['isConnectionError'] == true) {
+          print('HostelProvider: Connection error detected - loading from local storage');
+          await _loadFromLocalStorage();
+        }
+        // Check if reauthentication is required
+        else if (result['requiresReauth'] == true) {
+          print('HostelProvider: Reauthentication required - attempting token refresh first');
+          
+          // Try to refresh token before giving up
+          bool refreshed = false;
+          try {
+            refreshed = await _serviceManager.authService.refreshAccessToken();
+            print('HostelProvider: Token refresh result: $refreshed');
+          } catch (e) {
+            print('HostelProvider: Token refresh failed: $e');
+          }
+          
+          if (refreshed) {
+            print('HostelProvider: Token refreshed successfully, retrying API call');
+            // Token refreshed successfully, retry the API call
+            await loadHostelDetails(ownerId);
+            return; // Exit after retry
+          } else {
+            print('HostelProvider: Token refresh failed - clearing tokens and redirecting to login');
+            // Clear authentication state only if refresh fails
+            _serviceManager.clearAuth();
+            _errorMessage = 'Session expired. Please log in again.';
+            // Set special error state to trigger login redirect
+            _isLoading = false;
+            notifyListeners();
+            return; // Exit early to prevent local storage fallback
+          }
+        } else {
+          // Fallback to local storage if backend fails for other reasons
+          await _loadFromLocalStorage();
+        }
       }
     } catch (e) {
       print('HostelProvider Error - Load Details: $e');
-      _errorMessage = 'Backend unavailable, loading from local storage';
       
-      // Handle authentication errors
-      _serviceManager.handleApiError(e);
+      // Check if it's a connection error
+      if (e.toString().contains('SocketException') || 
+          e.toString().contains('TimeoutException') ||
+          e.toString().contains('Connection refused') ||
+          e.toString().contains('No address associated with hostname')) {
+        _errorMessage = 'Connection error. Loading saved data...';
+        print('HostelProvider: Connection error detected - loading from local storage');
+      } else {
+        _errorMessage = 'Backend unavailable, loading from local storage';
+        // Handle authentication errors for non-connection issues
+        await _serviceManager.handleApiError(e);
+      }
       
       // Fallback to local storage when backend is unavailable
       await _loadFromLocalStorage();
@@ -102,7 +176,14 @@ class HostelProvider extends ChangeNotifier {
     }
   }
 
-    // Update hostel information
+  // Retry mechanism for failed API calls
+  Future<void> retryLoadHostelDetails(String ownerId) async {
+    print('HostelProvider: Retrying API call...');
+    _errorMessage = null; // Clear previous error
+    await loadHostelDetails(ownerId);
+  }
+
+  // Update hostel information
   Future<bool> updateHostel(HostelModel updatedHostel) async {
     _isLoading = true;
     _errorMessage = null;
@@ -150,7 +231,7 @@ class HostelProvider extends ChangeNotifier {
       notifyListeners();
       
       // Handle authentication errors
-      _serviceManager.handleApiError(e);
+      await _serviceManager.handleApiError(e);
       return false;
     }
   }
@@ -190,7 +271,7 @@ class HostelProvider extends ChangeNotifier {
       notifyListeners();
       
       // Handle authentication errors
-      _serviceManager.handleApiError(e);
+      await _serviceManager.handleApiError(e);
       return false;
     }
   }
@@ -209,9 +290,11 @@ class HostelProvider extends ChangeNotifier {
           // Update hostel with new image URLs from server
           final uploadedFiles = result['data']['files'] as List<dynamic>?;
           if (uploadedFiles != null) {
-            final currentFiles = _hostel!.files;
-            final newFiles = [...currentFiles, ...uploadedFiles.cast<String>()];
-            _hostel = _hostel!.copyWith(files: newFiles);
+            // Always treat files as comma-separated string
+            final currentFiles = _hostel!.files.split(',').where((f) => f.isNotEmpty).toList();
+            final uploadedFilesList = uploadedFiles.cast<String>().toList();
+            final newFiles = [...currentFiles, ...uploadedFilesList];
+            _hostel = _hostel!.copyWith(files: newFiles.join(','));
           }
           
           _errorMessage = null;
@@ -237,7 +320,7 @@ class HostelProvider extends ChangeNotifier {
       notifyListeners();
       
       // Handle authentication errors
-      _serviceManager.handleApiError(e);
+      await _serviceManager.handleApiError(e);
       return false;
     }
   }
@@ -311,7 +394,7 @@ class HostelProvider extends ChangeNotifier {
   void _loadMockData() {
     _hostel = HostelModel(
       id: 'hostel_1',
-      name: 'PG Bee Hostel',
+      hostelName: 'PG Bee Hostel',
       ownerName: 'John Doe',
       phone: '+91 9876543210',
       address: '123 Main Street, City',
@@ -322,7 +405,8 @@ class HostelProvider extends ChangeNotifier {
       bedrooms: 2,
       bathrooms: 2,
       curfew: false,
-      files: ['image1.jpg', 'image2.jpg', 'image3.jpg'],
+      gender: 'male',
+      files: 'image1.jpg,image2.jpg,image3.jpg',
       amenities: [
         AmenityModel(id: '1', name: 'WiFi', description: 'High-speed internet', isAvailable: true),
         AmenityModel(id: '2', name: 'AC', description: 'Air conditioning', isAvailable: true),
@@ -341,6 +425,18 @@ class HostelProvider extends ChangeNotifier {
   void setHostelFromLocal(HostelModel hostel) {
     _hostel = hostel;
     _hostels = [hostel];
+    notifyListeners();
+  }
+
+  // Refresh hostel data (forces reload from backend)
+  Future<void> refresh(String ownerId) async {
+    print('HostelProvider: Refreshing hostel data...');
+    await loadHostelDetails(ownerId);
+  }
+
+  // Clear error message
+  void clearError() {
+    _errorMessage = null;
     notifyListeners();
   }
 

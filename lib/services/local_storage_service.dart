@@ -28,7 +28,15 @@ class LocalStorageService {
   // Hostel-related methods
   static Future<void> saveHostel(HostelModel hostel) async {
     try {
-      await _hostelBox?.put(hostel.id, hostel.toJson());
+      // Ensure the data matches the backend structure
+      final hostelData = hostel.toJson();
+      
+      // Ensure files is stored as a comma-separated string
+      if (hostelData['files'] is List) {
+        hostelData['files'] = (hostelData['files'] as List).join(',');
+      }
+      
+      await _hostelBox?.put(hostel.id, hostelData);
       print('Hostel saved to local storage: ${hostel.id}');
     } catch (e) {
       print('Error saving hostel to local storage: $e');
@@ -37,18 +45,31 @@ class LocalStorageService {
 
   static Future<List<HostelModel>> getHostels() async {
     try {
+      final box = _hostelBox;
+      if (box == null) return [];
       final hostels = <HostelModel>[];
-      final values = _hostelBox?.values ?? [];
-      
-      for (final value in values) {
-        if (value is Map<String, dynamic>) {
-          hostels.add(HostelModel.fromJson(value));
-        } else {
-          // Convert Map to Map<String, dynamic>
-          hostels.add(HostelModel.fromJson(Map<String, dynamic>.from(value)));
+      for (final value in box.values) {
+        try {
+          // Ensure type casting to Map<String, dynamic> with proper checking
+          Map<String, dynamic> map;
+          if (value is Map<String, dynamic>) {
+            map = value;
+          } else if (value is Map) {
+            // More robust casting for dynamic maps
+            map = Map<String, dynamic>();
+            value.forEach((key, val) {
+              map[key.toString()] = val;
+            });
+          } else {
+            print('LocalStorage: Skipping invalid hostel data type: ${value.runtimeType}');
+            continue;
+          }
+          hostels.add(HostelModel.fromJson(map));
+        } catch (e) {
+          print('LocalStorage: Error processing hostel data: $e');
+          continue;
         }
       }
-      
       return hostels;
     } catch (e) {
       print('Error loading hostels from local storage: $e');
@@ -277,7 +298,7 @@ class LocalStorageService {
       // Create mock hostel
       final mockHostel = HostelModel(
         id: 'hostel_local_1',
-        name: 'Local PG Bee Hostel',
+        hostelName: 'Local PG Bee Hostel',
         ownerName: 'John Doe',
         phone: '+91 9876543210',
         address: '123 Main Street, City',
@@ -288,7 +309,8 @@ class LocalStorageService {
         bedrooms: 2,
         bathrooms: 2,
         curfew: false,
-        files: ['local_image1.jpg', 'local_image2.jpg'],
+        gender: 'male', // Added gender field
+        files: 'local_image1.jpg,local_image2.jpg', // Changed to comma-separated string
         amenities: [
           AmenityModel(id: '1', name: 'WiFi', description: 'High-speed internet', isAvailable: true),
           AmenityModel(id: '2', name: 'AC', description: 'Air conditioning', isAvailable: true),

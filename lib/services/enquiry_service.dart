@@ -1,12 +1,14 @@
-import 'package:dio/dio.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../models/enquiry_model.dart';
 
+
 class EnquiryService {
-  final Dio _dio = Dio(BaseOptions(baseUrl: 'https://server.pgbee.in'));
-  
-  // Set authorization header for authenticated requests
+  final String _baseUrl = 'https://server.pgbee.in';
+  String? _authToken;
+
   void setAuthToken(String token) {
-    _dio.options.headers['Authorization'] = 'Bearer $token';
+    _authToken = token;
   }
 
   // Create a new enquiry - POST /enquiries
@@ -18,30 +20,29 @@ class EnquiryService {
     required String message,
   }) async {
     try {
-      final response = await _dio.post('/enquiries', data: {
+      final url = Uri.parse('$_baseUrl/enquiry');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      };
+      final body = {
         'studentName': studentName,
         'studentEmail': studentEmail,
         'studentPhone': studentPhone,
         'hostelId': hostelId,
         'message': message,
         'status': 'pending',
-      });
-
+      };
+      final response = await http.post(url, headers: headers, body: jsonEncode(body));
+      final data = response.body.isNotEmpty ? jsonDecode(response.body) : null;
       return {
         'success': response.statusCode == 200 || response.statusCode == 201,
-        'data': response.data,
+        'data': data,
         'message': 'Enquiry sent successfully',
       };
     } catch (e) {
       print('Enquiry Service Error - Create: $e');
-      
-      if (e is DioException) {
-        return {
-          'success': false,
-          'error': e.response?.data['message'] ?? 'Failed to send enquiry',
-        };
-      }
-      
       return {
         'success': false,
         'error': 'Failed to send enquiry',
@@ -52,35 +53,34 @@ class EnquiryService {
   // Get all enquiries for a hostel owner - GET /enquiries (filtered by owner)
   Future<Map<String, dynamic>> getOwnerEnquiries() async {
     try {
-      final response = await _dio.get('/enquiries');
-      
+      final url = Uri.parse('$_baseUrl/enquiry');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      };
+      final response = await http.get(url, headers: headers);
       if (response.statusCode == 200) {
-        // Parse the response data
-        final data = response.data;
+        final data = jsonDecode(response.body);
         List<EnquiryModel> enquiries = [];
-        
         if (data is List) {
-          enquiries = data.map((e) => EnquiryModel.fromJson(e)).toList();
+          enquiries = data.map<EnquiryModel>((e) => EnquiryModel.fromJson(e)).toList();
         } else if (data is Map && data['enquiries'] != null) {
           enquiries = (data['enquiries'] as List)
-              .map((e) => EnquiryModel.fromJson(e))
+              .map<EnquiryModel>((e) => EnquiryModel.fromJson(e))
               .toList();
         }
-        
         return {
           'success': true,
           'data': enquiries,
         };
       }
-      
       return {
         'success': false,
         'error': 'Failed to fetch enquiries',
       };
     } catch (e) {
       print('Enquiry Service Error - Get Owner Enquiries: $e');
-      
-      // For testing purposes, return mock enquiries
       return {
         'success': true,
         'data': getMockEnquiries(),
@@ -91,34 +91,34 @@ class EnquiryService {
   // Get enquiries for a specific hostel - GET /enquiries/hostel/:id
   Future<Map<String, dynamic>> getHostelEnquiries(String hostelId) async {
     try {
-      final response = await _dio.get('/enquiries/hostel/$hostelId');
-      
+      final url = Uri.parse('$_baseUrl/enquiry/hostel/$hostelId');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      };
+      final response = await http.get(url, headers: headers);
       if (response.statusCode == 200) {
-        final data = response.data;
+        final data = jsonDecode(response.body);
         List<EnquiryModel> enquiries = [];
-        
         if (data is List) {
-          enquiries = data.map((e) => EnquiryModel.fromJson(e)).toList();
+          enquiries = data.map<EnquiryModel>((e) => EnquiryModel.fromJson(e)).toList();
         } else if (data is Map && data['enquiries'] != null) {
           enquiries = (data['enquiries'] as List)
-              .map((e) => EnquiryModel.fromJson(e))
+              .map<EnquiryModel>((e) => EnquiryModel.fromJson(e))
               .toList();
         }
-        
         return {
           'success': true,
           'data': enquiries,
         };
       }
-      
       return {
         'success': false,
         'error': 'Failed to fetch hostel enquiries',
       };
     } catch (e) {
       print('Enquiry Service Error - Get Hostel Enquiries: $e');
-      
-      // Return mock data filtered by hostel
       return {
         'success': true,
         'data': getMockEnquiries().where((e) => e.hostelId == hostelId).toList(),
@@ -129,25 +129,22 @@ class EnquiryService {
   // Update enquiry status - PUT /enquiries/:id
   Future<Map<String, dynamic>> updateEnquiryStatus(String enquiryId, String status) async {
     try {
-      final response = await _dio.put('/enquiries/$enquiryId', data: {
-        'status': status,
-      });
-
+      final url = Uri.parse('$_baseUrl/enquiry/$enquiryId');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      };
+      final body = jsonEncode({'status': status});
+      final response = await http.put(url, headers: headers, body: body);
+      final data = response.body.isNotEmpty ? jsonDecode(response.body) : null;
       return {
         'success': response.statusCode == 200,
-        'data': response.data,
+        'data': data,
         'message': 'Enquiry status updated successfully',
       };
     } catch (e) {
       print('Enquiry Service Error - Update Status: $e');
-      
-      if (e is DioException) {
-        return {
-          'success': false,
-          'error': e.response?.data['message'] ?? 'Failed to update enquiry status',
-        };
-      }
-      
       return {
         'success': false,
         'error': 'Failed to update enquiry status',
@@ -168,22 +165,19 @@ class EnquiryService {
   // Delete an enquiry - DELETE /enquiries/:id
   Future<Map<String, dynamic>> deleteEnquiry(String enquiryId) async {
     try {
-      final response = await _dio.delete('/enquiries/$enquiryId');
-
+      final url = Uri.parse('$_baseUrl/enquiry/$enquiryId');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      };
+      final response = await http.delete(url, headers: headers);
       return {
         'success': response.statusCode == 200,
         'message': 'Enquiry deleted successfully',
       };
     } catch (e) {
       print('Enquiry Service Error - Delete: $e');
-      
-      if (e is DioException) {
-        return {
-          'success': false,
-          'error': e.response?.data['message'] ?? 'Failed to delete enquiry',
-        };
-      }
-      
       return {
         'success': false,
         'error': 'Failed to delete enquiry',
@@ -194,16 +188,20 @@ class EnquiryService {
   // Get enquiry statistics for dashboard
   Future<Map<String, dynamic>> getEnquiryStats() async {
     try {
-      final response = await _dio.get('/enquiries/stats');
-      
+      final url = Uri.parse('$_baseUrl/enquiries/stats');
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+      };
+      final response = await http.get(url, headers: headers);
+      final data = response.body.isNotEmpty ? jsonDecode(response.body) : null;
       return {
         'success': response.statusCode == 200,
-        'data': response.data,
+        'data': data,
       };
     } catch (e) {
       print('Enquiry Service Error - Get Stats: $e');
-      
-      // Return mock stats for testing
       return {
         'success': true,
         'data': {

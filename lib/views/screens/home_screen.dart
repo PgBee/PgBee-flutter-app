@@ -263,20 +263,40 @@ class _OwnerUpdateSectionState extends State<OwnerUpdateSection> {
   }
 
     Future<void> _initializeStudentCount() async {
-    // First try to load from local storage
-    final persistentCount = await LocalStorageService.getAdmittedStudentsCount();
-    if (mounted) {
-      setState(() {
-        _studentCount = persistentCount;
-      });
-    }
-    final hostelProvider = Provider.of<HostelProvider>(context, listen: false);
-    if (hostelProvider.hostel == null) {
-      await hostelProvider.loadHostelDetails('owner_1');
-    } else if (hostelProvider.hostel?.admittedStudents != null) {
-      setState(() {
-        _studentCount = hostelProvider.hostel!.admittedStudents;
-      });
+    try {
+      _studentCount = 0; // Ensure we start from 0
+      
+      // First try to get data from local storage as it's faster
+      final persistentCount = await LocalStorageService.getAdmittedStudentsCount();
+      if (mounted) {
+        setState(() {
+          _studentCount = persistentCount;
+        });
+      }
+
+      // Then try to get data from hostel provider
+      final hostelProvider = Provider.of<HostelProvider>(context, listen: false);
+      if (hostelProvider.hostel == null) {
+        await hostelProvider.loadHostelDetails('owner_1');
+      }
+      
+      // Update from hostel data if available
+      if (hostelProvider.hostel?.admittedStudents != null) {
+        if (mounted) {
+          setState(() {
+            _studentCount = hostelProvider.hostel!.admittedStudents;
+          });
+          // Sync local storage with latest data
+          await LocalStorageService.setAdmittedStudentsCount(_studentCount);
+        }
+      }
+    } catch (e) {
+      print('Error initializing student count: $e');
+      if (mounted) {
+        setState(() {
+          _studentCount = 0; // Ensure we default to 0 on error
+        });
+      }
     }
   }
 

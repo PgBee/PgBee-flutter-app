@@ -3,7 +3,8 @@ class AuthModel {
   final String password;
   final String? firstName; // Optional for signup
   final String? lastName;  // Optional for signup
-  final String? role;      // Optional, if backend requires it
+  final String? role;
+  final String? phoneNo;    // Optional, if backend requires it
 
   AuthModel({
     required this.email,
@@ -11,6 +12,7 @@ class AuthModel {
     this.firstName,
     this.lastName,
     this.role,
+    this.phoneNo,
   });
 
   Map<String, dynamic> toJson() => {
@@ -19,5 +21,6 @@ class AuthModel {
     if (firstName != null) 'firstName': firstName,
     if (lastName != null) 'lastName': lastName,
     if (role != null) 'role': role,
+    if (phoneNo != null) 'phoneNo': phoneNo,
   };
 }

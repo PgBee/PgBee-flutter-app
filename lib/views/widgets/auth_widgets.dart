@@ -83,92 +83,92 @@ class AuthWidgets {
   }
 
   // Google SignUp or Sign In Widget
-static Container googleAuth({
-  required BuildContext context,
-  required AuthProvider authProvider,
-}) {
-  return Container(
-    width: double.infinity,
-    height: 56,
-    decoration: ShapeDecoration(
-      color: LightColor.background,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(
-          width: 1,
-          color: LightColor.grey,
-        ),
-        borderRadius: BorderRadius.circular(25),
-      ),
-    ),
-    child: TextButton.icon(
-      onPressed: () async {
-        // Show loading dialog
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return const AlertDialog(
-              content: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(width: 16),
-                  Text('Signing in with Google...'),
-                ],
-              ),
-            );
-          },
-        );
+// static Container googleAuth({
+//   required BuildContext context,
+//   required AuthProvider authProvider,
+// }) {
+//   return Container(
+//     width: double.infinity,
+//     height: 56,
+//     decoration: ShapeDecoration(
+//       color: LightColor.background,
+//       shape: RoundedRectangleBorder(
+//         side: BorderSide(
+//           width: 1,
+//           color: LightColor.grey,
+//         ),
+//         borderRadius: BorderRadius.circular(25),
+//       ),
+//     ),
+//     child: TextButton.icon(
+//       onPressed: () async {
+//         // Show loading dialog
+//         showDialog(
+//           context: context,
+//           barrierDismissible: false,
+//           builder: (BuildContext context) {
+//             return const AlertDialog(
+//               content: Row(
+//                 mainAxisSize: MainAxisSize.min,
+//                 children: [
+//                   CircularProgressIndicator(),
+//                   SizedBox(width: 16),
+//                   Text('Signing in with Google...'),
+//                 ],
+//               ),
+//             );
+//           },
+//         );
 
-        try {
-          // Call Google Sign-In service
-          final result = await authProvider.googleSignIn();
+//         try {
+//           // Call Google Sign-In service
+//           final result = await authProvider.googleSignIn();
           
-          // Close loading dialog
-          Navigator.of(context).pop();
+//           // Close loading dialog
+//           Navigator.of(context).pop();
           
-          if (result) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(authProvider.isSignUp ? 'Signed up with Google successfully!' : 'Logged in with Google successfully!')),
-            );
-            // Navigate to root layout after successful Google sign in
-            Navigator.pushReplacementNamed(context, '/home');
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(authProvider.errorMessage ?? 'Google authentication failed')),
-            );
-          }
-        } catch (e) {
-          // Close loading dialog
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Google Sign-In error: ${e.toString()}')),
-          );
-        }
-      },
-      icon: Image.network(
-        'https://www.google.com/favicon.ico',
-        width: 20,
-        height: 20,
-      ),
-      label: Text(
-        authProvider.isSignUp ? 'Sign up with Google' : 'Log In with Google',
-        style: TextStyle(
-          color: LightColor.black,
-          fontSize: 16,
-          fontWeight: FontWeight.w400,
-        ),
-      ),
-      style: TextButton.styleFrom(
-        backgroundColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(25),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-      ),
-    ),
-  );
-}
+//           if (result) {
+//             ScaffoldMessenger.of(context).showSnackBar(
+//               SnackBar(content: Text(authProvider.isSignUp ? 'Signed up with Google successfully!' : 'Logged in with Google successfully!')),
+//             );
+//             // Navigate to root layout after successful Google sign in
+//             Navigator.pushReplacementNamed(context, '/home');
+//           } else {
+//             ScaffoldMessenger.of(context).showSnackBar(
+//               SnackBar(content: Text(authProvider.errorMessage ?? 'Google authentication failed')),
+//             );
+//           }
+//         } catch (e) {
+//           // Close loading dialog
+//           Navigator.of(context).pop();
+//           ScaffoldMessenger.of(context).showSnackBar(
+//             SnackBar(content: Text('Google Sign-In error: ${e.toString()}')),
+//           );
+//         }
+//       },
+//       icon: Image.network(
+//         'https://www.google.com/favicon.ico',
+//         width: 20,
+//         height: 20,
+//       ),
+//       label: Text(
+//         authProvider.isSignUp ? 'Sign up with Google' : 'Log In with Google',
+//         style: TextStyle(
+//           color: LightColor.black,
+//           fontSize: 16,
+//           fontWeight: FontWeight.w400,
+//         ),
+//       ),
+//       style: TextButton.styleFrom(
+//         backgroundColor: Colors.transparent,
+//         shape: RoundedRectangleBorder(
+//           borderRadius: BorderRadius.circular(25),
+//         ),
+//         padding: const EdgeInsets.symmetric(vertical: 12),
+//       ),
+//     ),
+//   );
+// }
 
   // Divider
   static Row divider(){
